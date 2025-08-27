@@ -1546,5 +1546,36 @@ def api_get_vacations(user_id):
         return jsonify({"error": f"Error al obtener vacaciones: {str(e)}"}), 500
 
 
+@app.get("/api/init-db")
+def api_init_database():
+    """Inicializar la base de datos (crear tablas)"""
+    try:
+        if not check_db_available():
+            return jsonify({"error": "Base de datos no disponible"}), 503
+
+        # Crear todas las tablas
+        with app.app_context():
+            db.create_all()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Base de datos inicializada correctamente",
+                "tables_created": [
+                    "users",
+                    "shift_patterns",
+                    "calendars",
+                    "vacations",
+                    "ai_suggestions",
+                    "holidays",
+                    "user_settings",
+                ],
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Error al inicializar BD: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
