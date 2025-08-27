@@ -5,6 +5,7 @@ import itertools
 import io
 import csv
 import requests
+import os
 from database import (
     db,
     User,
@@ -20,12 +21,24 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Inicializar la base de datos solo si hay configuración
-if app.config.get("SQLALCHEMY_DATABASE_URI"):
-    db.init_app(app)
-    print("✅ Base de datos inicializada")
-else:
-    print("⚠️ No se configuró base de datos - modo sin BD")
+
+# Inicializar la base de datos solo si hay configuración y está disponible
+def init_database():
+    try:
+        if app.config.get("SQLALCHEMY_DATABASE_URI"):
+            db.init_app(app)
+            print("✅ Base de datos inicializada")
+            return True
+        else:
+            print("⚠️ No se configuró base de datos - modo sin BD")
+            return False
+    except Exception as e:
+        print(f"❌ Error al inicializar BD: {e}")
+        return False
+
+
+# Intentar inicializar la BD
+db_initialized = init_database()
 
 # ====== FERIADOS CHILE 2025 ======
 # Campos: date (YYYY-MM-DD), name, irrenunciable (bool), scope: "nacional" | "electoral" | "regional:XV" | "local:chillan"
@@ -473,7 +486,11 @@ def is_weekend(d: date) -> bool:
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    """Página principal - funciona con o sin base de datos"""
+    try:
+        return render_template("index.html")
+    except Exception as e:
+        return f"Error al cargar la aplicación: {str(e)}", 500
 
 
 @app.post("/api/build")
@@ -1310,7 +1327,7 @@ def api_get_holidays(year: int):
 
 def check_db_available():
     """Verificar si la base de datos está disponible"""
-    return app.config.get("SQLALCHEMY_DATABASE_URI") is not None
+    return db_initialized and app.config.get("SQLALCHEMY_DATABASE_URI") is not None
 
 
 @app.post("/api/user/register")
@@ -1544,6 +1561,18 @@ def api_get_vacations(user_id):
 
     except Exception as e:
         return jsonify({"error": f"Error al obtener vacaciones: {str(e)}"}), 500
+
+
+@app.get("/health")
+def health_check():
+    """Endpoint de salud para verificar que la aplicación funciona"""
+    return jsonify(
+        {
+            "status": "healthy",
+            "database": "available" if db_initialized else "not_configured",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    )
 
 
 @app.get("/api/init-db")
