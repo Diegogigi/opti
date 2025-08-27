@@ -1,5 +1,21 @@
 from __future__ import annotations
-from flask import Flask, request, jsonify, render_template, make_response
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    render_template,
+    make_response,
+    redirect,
+    url_for,
+    flash,
+)
+from flask_login import (
+    LoginManager,
+    login_user,
+    logout_user,
+    login_required,
+    current_user,
+)
 from datetime import date, datetime, timedelta
 import itertools
 import io
@@ -15,11 +31,26 @@ from database import (
     AISuggestion,
     Holiday,
     UserSettings,
+    CompanySettings,
+    CompanyEmployee,
 )
 from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Configurar Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+login_manager.login_message = "Por favor inicia sesión para acceder a esta página."
+login_manager.login_message_category = "info"
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Cargar usuario para Flask-Login"""
+    return User.query.get(int(user_id))
 
 
 # Inicializar la base de datos solo si hay configuración y está disponible
@@ -484,9 +515,49 @@ def is_weekend(d: date) -> bool:
     return d.weekday() in (5, 6)  # sábado/domingo
 
 
+# ====== RUTAS DE AUTENTICACIÓN ======
+
+
+@app.get("/login")
+def login():
+    """Página de login"""
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
+@app.get("/register")
+def register():
+    """Página de registro"""
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    return render_template("register.html")
+
+
+@app.get("/logout")
+@login_required
+def logout():
+    """Cerrar sesión"""
+    logout_user()
+    flash("Has cerrado sesión correctamente.", "success")
+    return redirect(url_for("login"))
+
+
+@app.get("/dashboard")
+@login_required
+def dashboard():
+    """Dashboard específico según tipo de usuario"""
+    if current_user.is_company_user:
+        return render_template("company_dashboard.html")
+    else:
+        # Para usuarios particulares, redirigir a la página principal
+        return redirect(url_for("index"))
+
+
 @app.get("/")
+@login_required
 def index():
-    """Página principal - funciona con o sin base de datos"""
+    """Página principal - requiere autenticación"""
     try:
         return render_template("index.html")
     except Exception as e:
@@ -1340,11 +1411,18 @@ def api_register_user():
         data = request.get_json(force=True)
         email = data.get("email")
         name = data.get("name")
+        user_type = data.get("user_type", "individual")
         company = data.get("company", "")
         position = data.get("position", "")
+        company_size = data.get("company_size")
+        industry = data.get("industry")
 
         if not email or not name:
             return jsonify({"error": "Email y nombre son requeridos"}), 400
+
+        # Validar tipo de usuario
+        if user_type not in ["individual", "company"]:
+            return jsonify({"error": "Tipo de usuario inválido"}), 400
 
         # Verificar si el usuario ya existe
         existing_user = User.query.filter_by(email=email).first()
@@ -1352,7 +1430,16 @@ def api_register_user():
             return jsonify({"error": "El usuario ya existe"}), 409
 
         # Crear nuevo usuario
-        user = User(email=email, name=name, company=company, position=position)
+        user = User(
+            email=email,
+            name=name,
+            company=company,
+            position=position,
+            user_type=user_type,
+            company_size=company_size,
+            industry=industry,
+            is_company_admin=(user_type == "company"),
+        )
         db.session.add(user)
         db.session.commit()
 
@@ -1361,10 +1448,22 @@ def api_register_user():
         db.session.add(settings)
         db.session.commit()
 
+        # Si es empresa, crear configuración de empresa
+        if user_type == "company":
+            company_settings = CompanySettings(
+                company_id=user.id,
+                default_vacation_days=21,
+                approval_required=True,
+                auto_approve_vacations=False,
+            )
+            db.session.add(company_settings)
+            db.session.commit()
+
         return jsonify(
             {
                 "success": True,
                 "user_id": user.id,
+                "user_type": user_type,
                 "message": "Usuario registrado correctamente",
             }
         )
@@ -1392,6 +1491,9 @@ def api_login_user():
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
+        # Iniciar sesión con Flask-Login
+        login_user(user, remember=True)
+
         # Actualizar último acceso
         user.last_access = datetime.utcnow()
         db.session.commit()
@@ -1414,6 +1516,7 @@ def api_login_user():
 
 
 @app.post("/api/pattern/save")
+@login_required
 def api_save_pattern():
     """Guardar patrón de turnos"""
     if not check_db_available():
@@ -1421,18 +1524,17 @@ def api_save_pattern():
 
     try:
         data = request.get_json(force=True)
-        user_id = data.get("user_id")
         name = data.get("name")
         pattern = data.get("pattern")
         shift_type = data.get("shift_type")
         description = data.get("description", "")
 
-        if not all([user_id, name, pattern, shift_type]):
+        if not all([name, pattern, shift_type]):
             return jsonify({"error": "Todos los campos son requeridos"}), 400
 
-        # Crear nuevo patrón
+        # Crear nuevo patrón usando current_user
         shift_pattern = ShiftPattern(
-            user_id=user_id,
+            user_id=current_user.id,
             name=name,
             pattern=pattern,
             shift_type=shift_type,
@@ -1454,14 +1556,17 @@ def api_save_pattern():
         return jsonify({"error": f"Error al guardar patrón: {str(e)}"}), 500
 
 
-@app.get("/api/patterns/<int:user_id>")
-def api_get_patterns(user_id):
-    """Obtener patrones de un usuario"""
+@app.get("/api/patterns")
+@login_required
+def api_get_patterns():
+    """Obtener patrones del usuario actual"""
     if not check_db_available():
         return jsonify({"error": "Base de datos no disponible"}), 503
 
     try:
-        patterns = ShiftPattern.query.filter_by(user_id=user_id, is_active=True).all()
+        patterns = ShiftPattern.query.filter_by(
+            user_id=current_user.id, is_active=True
+        ).all()
 
         return jsonify(
             {
@@ -1485,6 +1590,7 @@ def api_get_patterns(user_id):
 
 
 @app.post("/api/vacation/save")
+@login_required
 def api_save_vacation():
     """Guardar vacación"""
     if not check_db_available():
@@ -1492,19 +1598,18 @@ def api_save_vacation():
 
     try:
         data = request.get_json(force=True)
-        user_id = data.get("user_id")
         start_date = data.get("start_date")
         end_date = data.get("end_date")
         days_used = data.get("days_used")
         calculation_type = data.get("calculation_type", "traditional")
         notes = data.get("notes", "")
 
-        if not all([user_id, start_date, end_date, days_used]):
+        if not all([start_date, end_date, days_used]):
             return jsonify({"error": "Campos requeridos faltantes"}), 400
 
-        # Crear nueva vacación
+        # Crear nueva vacación usando current_user
         vacation = Vacation(
-            user_id=user_id,
+            user_id=current_user.id,
             start_date=datetime.strptime(start_date, "%Y-%m-%d").date(),
             end_date=datetime.strptime(end_date, "%Y-%m-%d").date(),
             days_used=days_used,
@@ -1527,15 +1632,16 @@ def api_save_vacation():
         return jsonify({"error": f"Error al guardar vacación: {str(e)}"}), 500
 
 
-@app.get("/api/vacations/<int:user_id>")
-def api_get_vacations(user_id):
-    """Obtener vacaciones de un usuario"""
+@app.get("/api/vacations")
+@login_required
+def api_get_vacations():
+    """Obtener vacaciones del usuario actual"""
     if not check_db_available():
         return jsonify({"error": "Base de datos no disponible"}), 503
 
     try:
         vacations = (
-            Vacation.query.filter_by(user_id=user_id)
+            Vacation.query.filter_by(user_id=current_user.id)
             .order_by(Vacation.start_date.desc())
             .all()
         )
@@ -1561,6 +1667,230 @@ def api_get_vacations(user_id):
 
     except Exception as e:
         return jsonify({"error": f"Error al obtener vacaciones: {str(e)}"}), 500
+
+
+@app.get("/api/user/profile")
+@login_required
+def api_get_user_profile():
+    """Obtener perfil del usuario actual"""
+    try:
+        return jsonify(
+            {
+                "success": True,
+                "user": {
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "name": current_user.name,
+                    "company": current_user.company,
+                    "position": current_user.position,
+                    "user_type": current_user.user_type,
+                    "company_size": current_user.company_size,
+                    "industry": current_user.industry,
+                    "is_company_admin": current_user.is_company_admin,
+                    "created_at": current_user.created_at.isoformat(),
+                    "last_access": current_user.last_access.isoformat(),
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener perfil: {str(e)}"}), 500
+
+
+# ====== ENDPOINTS PARA EMPRESAS ======
+
+
+@app.post("/api/company/employee/add")
+@login_required
+def api_add_employee():
+    """Agregar empleado a la empresa"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    if not current_user.is_company_user:
+        return jsonify({"error": "Solo empresas pueden agregar empleados"}), 403
+
+    try:
+        data = request.get_json(force=True)
+        employee_email = data.get("email")
+        employee_name = data.get("name")
+        department = data.get("department", "")
+        position = data.get("position", "")
+        employee_code = data.get("employee_code", "")
+        hire_date = data.get("hire_date")
+        vacation_days = int(data.get("vacation_days", 21))
+
+        if not employee_email or not employee_name:
+            return jsonify({"error": "Email y nombre del empleado son requeridos"}), 400
+
+        # Verificar si el empleado ya existe
+        existing_employee = User.query.filter_by(email=employee_email).first()
+        if existing_employee:
+            return jsonify({"error": "El empleado ya existe"}), 409
+
+        # Crear usuario empleado
+        employee = User(
+            email=employee_email,
+            name=employee_name,
+            position=position,
+            user_type="individual",
+        )
+        db.session.add(employee)
+        db.session.commit()
+
+        # Crear relación empleado-empresa
+        company_employee = CompanyEmployee(
+            company_id=current_user.id,
+            employee_id=employee.id,
+            employee_code=employee_code,
+            department=department,
+            hire_date=(
+                datetime.strptime(hire_date, "%Y-%m-%d").date() if hire_date else None
+            ),
+            vacation_days_available=vacation_days,
+        )
+        db.session.add(company_employee)
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "employee_id": employee.id,
+                "message": "Empleado agregado correctamente",
+            }
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al agregar empleado: {str(e)}"}), 500
+
+
+@app.get("/api/company/employees")
+@login_required
+def api_get_company_employees():
+    """Obtener empleados de la empresa"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    if not current_user.is_company_user:
+        return jsonify({"error": "Solo empresas pueden ver empleados"}), 403
+
+    try:
+        employees = CompanyEmployee.query.filter_by(
+            company_id=current_user.id, is_active=True
+        ).all()
+
+        employee_list = []
+        for emp in employees:
+            employee_list.append(
+                {
+                    "id": emp.employee.id,
+                    "name": emp.employee.name,
+                    "email": emp.employee.email,
+                    "position": emp.employee.position,
+                    "employee_code": emp.employee_code,
+                    "department": emp.department,
+                    "hire_date": emp.hire_date.isoformat() if emp.hire_date else None,
+                    "vacation_days_available": emp.vacation_days_available,
+                    "vacation_days_used": emp.vacation_days_used,
+                    "vacation_days_remaining": emp.vacation_days_available
+                    - emp.vacation_days_used,
+                }
+            )
+
+        return jsonify(
+            {
+                "success": True,
+                "employees": employee_list,
+                "total_employees": len(employee_list),
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener empleados: {str(e)}"}), 500
+
+
+@app.get("/api/company/settings")
+@login_required
+def api_get_company_settings():
+    """Obtener configuración de la empresa"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    if not current_user.is_company_user:
+        return jsonify({"error": "Solo empresas pueden ver configuración"}), 403
+
+    try:
+        settings = CompanySettings.query.filter_by(company_id=current_user.id).first()
+
+        if not settings:
+            # Crear configuración por defecto
+            settings = CompanySettings(
+                company_id=current_user.id,
+                default_vacation_days=21,
+                approval_required=True,
+                auto_approve_vacations=False,
+            )
+            db.session.add(settings)
+            db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "default_vacation_days": settings.default_vacation_days,
+                    "vacation_policy": settings.vacation_policy,
+                    "shift_policy": settings.shift_policy,
+                    "approval_required": settings.approval_required,
+                    "auto_approve_vacations": settings.auto_approve_vacations,
+                    "notification_email": settings.notification_email,
+                },
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener configuración: {str(e)}"}), 500
+
+
+@app.put("/api/company/settings")
+@login_required
+def api_update_company_settings():
+    """Actualizar configuración de la empresa"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    if not current_user.is_company_user:
+        return jsonify({"error": "Solo empresas pueden actualizar configuración"}), 403
+
+    try:
+        data = request.get_json(force=True)
+
+        settings = CompanySettings.query.filter_by(company_id=current_user.id).first()
+        if not settings:
+            return jsonify({"error": "Configuración de empresa no encontrada"}), 404
+
+        # Actualizar campos
+        if "default_vacation_days" in data:
+            settings.default_vacation_days = data["default_vacation_days"]
+        if "vacation_policy" in data:
+            settings.vacation_policy = data["vacation_policy"]
+        if "shift_policy" in data:
+            settings.shift_policy = data["shift_policy"]
+        if "approval_required" in data:
+            settings.approval_required = data["approval_required"]
+        if "auto_approve_vacations" in data:
+            settings.auto_approve_vacations = data["auto_approve_vacations"]
+        if "notification_email" in data:
+            settings.notification_email = data["notification_email"]
+
+        db.session.commit()
+
+        return jsonify(
+            {"success": True, "message": "Configuración actualizada correctamente"}
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al actualizar configuración: {str(e)}"}), 500
 
 
 @app.get("/health")

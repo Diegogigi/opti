@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPTI - Dashboard Empresa</title>
+    <style>
+      :root[data-theme="dark"] {
+        --bg: #0f172a;
+        --panel: #111827;
+        --muted: #9ca3af;
+        --acc: #22c55e;
+        --acc2: #60a5fa;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --chip: #1f2937;
+        --text: #e5e7eb;
+        --border: #1f2937;
+        --input-bg: #0b1227;
+        --input-border: #374151;
+      }
+
+      :root[data-theme="light"] {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --muted: #64748b;
+        --acc: #16a34a;
+        --acc2: #2563eb;
+        --warn: #d97706;
+        --bad: #dc2626;
+        --chip: #f1f5f9;
+        --text: #1e293b;
+        --border: #e2e8f0;
+        --input-bg: #ffffff;
+        --input-border: #cbd5e1;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      .header {
+        background: linear-gradient(135deg, var(--panel), var(--chip));
+        padding: 1rem 2rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--acc2);
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: opacity 0.2s;
+      }
+
+      .btn-primary {
+        background: var(--acc2);
+        color: white;
+      }
+
+      .btn-danger {
+        background: var(--bad);
+        color: white;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .card h3 {
+        color: var(--acc2);
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+      }
+
+      .stat {
+        text-align: center;
+        padding: 1rem;
+        background: var(--chip);
+        border-radius: 8px;
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--acc);
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-top: 0.5rem;
+      }
+
+      .employees-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      .employees-table th,
+      .employees-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .employees-table th {
+        background: var(--chip);
+        font-weight: 600;
+        color: var(--acc2);
+      }
+
+      .vacation-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .status-available {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--acc);
+      }
+
+      .status-low {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warn);
+      }
+
+      .status-none {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--bad);
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      }
+
+      .modal-content {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 500px;
+        margin: 2rem auto;
+        position: relative;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--muted);
+      }
+
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--input-bg);
+        color: var(--text);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="logo">OPTI - Dashboard Empresa</div>
+      <div class="user-info">
+        <span id="company-name"></span>
+        <button class="btn btn-primary" onclick="showAddEmployeeModal()">
+          + Agregar Empleado
+        </button>
+        <button class="btn btn-danger" onclick="logout()">Cerrar Sesión</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Estadísticas generales -->
+      <div class="dashboard-grid">
+        <div class="card">
+          <h3>📊 Estadísticas Generales</h3>
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="stat-number" id="total-employees">0</div>
+              <div class="stat-label">Empleados</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number" id="active-vacations">0</div>
+              <div class="stat-label">Vacaciones Activas</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number" id="pending-approvals">0</div>
+              <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number" id="avg-vacation-days">0</div>
+              <div class="stat-label">Promedio Días</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>⚙️ Configuración de Empresa</h3>
+          <div class="form-group">
+            <label>Días de vacaciones por defecto:</label>
+            <input type="number" id="default-vacation-days" min="0" max="365" />
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="approval-required" /> Requerir
+              aprobación de vacaciones
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="auto-approve" /> Aprobación automática
+            </label>
+          </div>
+          <button class="btn btn-primary" onclick="saveCompanySettings()">
+            Guardar Configuración
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de empleados -->
+      <div class="card">
+        <h3>👥 Empleados</h3>
+        <table class="employees-table">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Departamento</th>
+              <th>Cargo</th>
+              <th>Días Disponibles</th>
+              <th>Días Usados</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="employees-tbody">
+            <!-- Los empleados se cargarán dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal para agregar empleado -->
+    <div id="addEmployeeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Agregar Empleado</h3>
+          <button class="close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="addEmployeeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="employee-name">Nombre completo *</label>
+              <input type="text" id="employee-name" required />
+            </div>
+            <div class="form-group">
+              <label for="employee-email">Email *</label>
+              <input type="email" id="employee-email" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="employee-position">Cargo</label>
+              <input type="text" id="employee-position" />
+            </div>
+            <div class="form-group">
+              <label for="employee-department">Departamento</label>
+              <input type="text" id="employee-department" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="employee-code">Código de empleado</label>
+              <input type="text" id="employee-code" />
+            </div>
+            <div class="form-group">
+              <label for="employee-vacation-days">Días de vacaciones</label>
+              <input
+                type="number"
+                id="employee-vacation-days"
+                value="21"
+                min="0"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="employee-hire-date">Fecha de contratación</label>
+            <input type="date" id="employee-hire-date" />
+          </div>
+          <div style="display: flex; gap: 1rem; justify-content: flex-end">
+            <button type="button" class="btn" onclick="closeModal()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Agregar Empleado
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Cargar datos al iniciar
+      document.addEventListener("DOMContentLoaded", function () {
+        loadCompanyProfile();
+        loadEmployees();
+        loadCompanySettings();
+      });
+
+      // Cargar perfil de la empresa
+      async function loadCompanyProfile() {
+        try {
+          const response = await fetch("/api/user/profile");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              document.getElementById("company-name").textContent =
+                data.user.name;
+            }
+          }
+        } catch (error) {
+          console.error("Error al cargar perfil:", error);
+        }
+      }
+
+      // Cargar empleados
+      async function loadEmployees() {
+        try {
+          const response = await fetch("/api/company/employees");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              displayEmployees(data.employees);
+              updateStats(data.employees);
+            }
+          }
+        } catch (error) {
+          console.error("Error al cargar empleados:", error);
+        }
+      }
+
+      // Mostrar empleados en la tabla
+      function displayEmployees(employees) {
+        const tbody = document.getElementById("employees-tbody");
+        tbody.innerHTML = "";
+
+        employees.forEach((employee) => {
+          const row = document.createElement("tr");
+          const statusClass = getVacationStatusClass(
+            employee.vacation_days_remaining
+          );
+
+          row.innerHTML = `
+                    <td>
+                        <div><strong>${employee.name}</strong></div>
+                        <div style="font-size: 0.8rem; color: var(--muted);">${
+                          employee.email
+                        }</div>
+                    </td>
+                    <td>${employee.department || "-"}</td>
+                    <td>${employee.position || "-"}</td>
+                    <td>${employee.vacation_days_available}</td>
+                    <td>${employee.vacation_days_used}</td>
+                    <td>
+                        <span class="vacation-status ${statusClass}">
+                            ${employee.vacation_days_remaining} días
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewEmployee(${
+                          employee.id
+                        })">Ver</button>
+                    </td>
+                `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Obtener clase CSS para el estado de vacaciones
+      function getVacationStatusClass(daysRemaining) {
+        if (daysRemaining > 10) return "status-available";
+        if (daysRemaining > 0) return "status-low";
+        return "status-none";
+      }
+
+      // Actualizar estadísticas
+      function updateStats(employees) {
+        document.getElementById("total-employees").textContent =
+          employees.length;
+
+        const totalVacationDays = employees.reduce(
+          (sum, emp) => sum + emp.vacation_days_available,
+          0
+        );
+        const avgDays =
+          employees.length > 0
+            ? Math.round(totalVacationDays / employees.length)
+            : 0;
+        document.getElementById("avg-vacation-days").textContent = avgDays;
+
+        // Estos valores se actualizarían con datos reales de vacaciones
+        document.getElementById("active-vacations").textContent = "0";
+        document.getElementById("pending-approvals").textContent = "0";
+      }
+
+      // Cargar configuración de empresa
+      async function loadCompanySettings() {
+        try {
+          const response = await fetch("/api/company/settings");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              const settings = data.settings;
+              document.getElementById("default-vacation-days").value =
+                settings.default_vacation_days;
+              document.getElementById("approval-required").checked =
+                settings.approval_required;
+              document.getElementById("auto-approve").checked =
+                settings.auto_approve_vacations;
+            }
+          }
+        } catch (error) {
+          console.error("Error al cargar configuración:", error);
+        }
+      }
+
+      // Guardar configuración de empresa
+      async function saveCompanySettings() {
+        try {
+          const settings = {
+            default_vacation_days: parseInt(
+              document.getElementById("default-vacation-days").value
+            ),
+            approval_required:
+              document.getElementById("approval-required").checked,
+            auto_approve_vacations:
+              document.getElementById("auto-approve").checked,
+          };
+
+          const response = await fetch("/api/company/settings", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(settings),
+          });
+
+          if (response.ok) {
+            alert("Configuración guardada correctamente");
+          } else {
+            alert("Error al guardar configuración");
+          }
+        } catch (error) {
+          console.error("Error al guardar configuración:", error);
+          alert("Error al guardar configuración");
+        }
+      }
+
+      // Mostrar modal para agregar empleado
+      function showAddEmployeeModal() {
+        document.getElementById("addEmployeeModal").style.display = "block";
+      }
+
+      // Cerrar modal
+      function closeModal() {
+        document.getElementById("addEmployeeModal").style.display = "none";
+        document.getElementById("addEmployeeForm").reset();
+      }
+
+      // Manejar formulario de agregar empleado
+      document
+        .getElementById("addEmployeeForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = {
+            name: document.getElementById("employee-name").value,
+            email: document.getElementById("employee-email").value,
+            position: document.getElementById("employee-position").value,
+            department: document.getElementById("employee-department").value,
+            employee_code: document.getElementById("employee-code").value,
+            vacation_days: parseInt(
+              document.getElementById("employee-vacation-days").value
+            ),
+            hire_date: document.getElementById("employee-hire-date").value,
+          };
+
+          try {
+            const response = await fetch("/api/company/employee/add", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+              alert("Empleado agregado correctamente");
+              closeModal();
+              loadEmployees(); // Recargar lista
+            } else {
+              const data = await response.json();
+              alert(data.error || "Error al agregar empleado");
+            }
+          } catch (error) {
+            console.error("Error al agregar empleado:", error);
+            alert("Error al agregar empleado");
+          }
+        });
+
+      // Ver empleado (placeholder)
+      function viewEmployee(employeeId) {
+        alert(`Ver detalles del empleado ${employeeId}`);
+        // Aquí se implementaría la vista detallada del empleado
+      }
+
+      // Cerrar sesión
+      function logout() {
+        window.location.href = "/logout";
+      }
+
+      // Cerrar modal al hacer clic fuera
+      window.onclick = function (event) {
+        const modal = document.getElementById("addEmployeeModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+    </script>
+  </body>
+</html>

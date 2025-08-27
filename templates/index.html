@@ -1351,7 +1351,7 @@
   </head>
   <body>
     <header>
-      <div style="text-align: center">
+      <div style="text-align: center; flex: 1">
         <h1>OPTI</h1>
         <div
           style="
@@ -1366,6 +1366,66 @@
           Planificador de Turnos y Vacaciones
         </div>
       </div>
+
+      <!-- Información del usuario -->
+      <div
+        id="user-info"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-right: 20px;
+          font-size: 14px;
+          color: var(--text);
+        "
+      >
+        <div style="text-align: right">
+          <div
+            id="user-name"
+            style="font-weight: 600; color: var(--acc2)"
+          ></div>
+          <div
+            id="user-email"
+            style="font-size: 12px; color: var(--muted)"
+          ></div>
+        </div>
+        <button
+          id="dashboard-btn"
+          style="
+            background: var(--acc2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: none;
+          "
+          onmouseover="this.style.opacity='0.8'"
+          onmouseout="this.style.opacity='1'"
+        >
+          Dashboard Empresa
+        </button>
+        <button
+          id="logout-btn"
+          style="
+            background: var(--bad);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+          "
+          onmouseover="this.style.opacity='0.8'"
+          onmouseout="this.style.opacity='1'"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+
       <button class="theme-toggle" id="themeToggle">🌙</button>
     </header>
 
@@ -3070,6 +3130,53 @@
           }, 3000);
         }
       }, 1000);
+
+      // ====== FUNCIONES DE USUARIO ======
+
+      // Cargar información del usuario
+      async function loadUserInfo() {
+        try {
+          const response = await fetch("/api/user/profile");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              const user = data.user;
+              document.getElementById("user-name").textContent = user.name;
+              document.getElementById("user-email").textContent = user.email;
+              
+              // Mostrar botón de dashboard para empresas
+              const dashboardBtn = document.getElementById("dashboard-btn");
+              if (user.user_type === "company") {
+                dashboardBtn.style.display = "inline-block";
+                dashboardBtn.addEventListener("click", function() {
+                  window.location.href = "/dashboard";
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error al cargar información del usuario:", error);
+        }
+      }
+
+      // Manejar logout
+      document
+        .getElementById("logout-btn")
+        .addEventListener("click", async function () {
+          try {
+            const response = await fetch("/logout");
+            if (response.ok) {
+              window.location.href = "/login";
+            }
+          } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+            // Redirigir de todas formas
+            window.location.href = "/login";
+          }
+        });
+
+      // Cargar información del usuario al iniciar
+      loadUserInfo();
     </script>
   </body>
 </html>

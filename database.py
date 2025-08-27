@@ -1,11 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import json
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -13,6 +14,14 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     company = db.Column(db.String(100))
     position = db.Column(db.String(100))
+    user_type = db.Column(
+        db.String(20), default="individual"
+    )  # "individual" o "company"
+    company_size = db.Column(db.String(20))  # "small", "medium", "large"
+    industry = db.Column(db.String(100))  # Sector de la empresa
+    is_company_admin = db.Column(
+        db.Boolean, default=False
+    )  # Para administradores de empresa
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_access = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
@@ -23,6 +32,28 @@ class User(db.Model):
     vacations = db.relationship("Vacation", backref="user", lazy=True)
     ai_suggestions = db.relationship("AISuggestion", backref="user", lazy=True)
     user_settings = db.relationship("UserSettings", backref="user", uselist=False)
+
+    def get_id(self):
+        """Método requerido por Flask-Login"""
+        return str(self.id)
+
+    def is_authenticated(self):
+        """Método requerido por Flask-Login"""
+        return True
+
+    def is_anonymous(self):
+        """Método requerido por Flask-Login"""
+        return False
+
+    @property
+    def is_company_user(self):
+        """Verificar si es usuario de empresa"""
+        return self.user_type == "company"
+
+    @property
+    def is_individual_user(self):
+        """Verificar si es usuario particular"""
+        return self.user_type == "individual"
 
 
 class ShiftPattern(db.Model):
@@ -129,3 +160,59 @@ class UserSettings(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+
+class CompanyEmployee(db.Model):
+    __tablename__ = "company_employees"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    employee_code = db.Column(db.String(50))  # Código interno del empleado
+    department = db.Column(db.String(100))  # Departamento
+    supervisor_id = db.Column(db.Integer, db.ForeignKey("users.id"))  # Supervisor
+    hire_date = db.Column(db.Date)  # Fecha de contratación
+    vacation_days_available = db.Column(
+        db.Integer, default=21
+    )  # Días de vacaciones disponibles
+    vacation_days_used = db.Column(db.Integer, default=0)  # Días de vacaciones usados
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relaciones
+    company = db.relationship("User", foreign_keys=[company_id], backref="employees")
+    employee = db.relationship(
+        "User", foreign_keys=[employee_id], backref="employments"
+    )
+    supervisor = db.relationship(
+        "User", foreign_keys=[supervisor_id], backref="subordinates"
+    )
+
+
+class CompanySettings(db.Model):
+    __tablename__ = "company_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    default_vacation_days = db.Column(
+        db.Integer, default=21
+    )  # Días de vacaciones por defecto
+    vacation_policy = db.Column(db.Text)  # Política de vacaciones
+    shift_policy = db.Column(db.Text)  # Política de turnos
+    approval_required = db.Column(
+        db.Boolean, default=True
+    )  # Requiere aprobación de vacaciones
+    auto_approve_vacations = db.Column(
+        db.Boolean, default=False
+    )  # Aprobación automática
+    notification_email = db.Column(db.String(120))  # Email para notificaciones
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relación
+    company = db.relationship("User", backref="company_settings")

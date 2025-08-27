@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPTI - Crear Cuenta</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .register-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+      }
+
+      .logo {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 1.1rem;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      @media (max-width: 600px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e1e5e9;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .divider {
+        margin: 30px 0;
+        display: flex;
+        align-items: center;
+        color: #666;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #e1e5e9;
+      }
+
+      .divider span {
+        padding: 0 15px;
+      }
+
+      .login-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .login-link:hover {
+        text-decoration: underline;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #fcc;
+      }
+
+      .success-message {
+        background: #efe;
+        color: #363;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #cfc;
+      }
+
+      .loading {
+        display: none;
+      }
+
+      .loading.show {
+        display: inline-block;
+      }
+
+      .required {
+        color: #c33;
+      }
+
+      @media (max-width: 480px) {
+        .register-container {
+          padding: 30px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-container">
+      <div class="logo">OPTI</div>
+      <div class="subtitle">Crear tu cuenta</div>
+
+      <div id="error-message" class="error-message" style="display: none"></div>
+      <div
+        id="success-message"
+        class="success-message"
+        style="display: none"
+      ></div>
+
+      <form id="register-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name"
+              >Nombre completo <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              placeholder="Tu nombre"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email <span class="required">*</span></label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              placeholder="tu@email.com"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="user_type"
+            >Tipo de cuenta <span class="required">*</span></label
+          >
+          <select id="user_type" name="user_type" required>
+            <option value="individual">Persona Particular</option>
+            <option value="company">Empresa</option>
+          </select>
+        </div>
+
+        <!-- Campos para empresa (inicialmente ocultos) -->
+        <div id="company-fields" style="display: none">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="company"
+                >Nombre de la empresa <span class="required">*</span></label
+              >
+              <input
+                type="text"
+                id="company"
+                name="company"
+                placeholder="Nombre de la empresa"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="company_size">Tamaño de la empresa</label>
+              <select id="company_size" name="company_size">
+                <option value="small">Pequeña (1-50 empleados)</option>
+                <option value="medium">Mediana (51-200 empleados)</option>
+                <option value="large">Grande (200+ empleados)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="industry">Sector/Industria</label>
+            <select id="industry" name="industry">
+              <option value="">Seleccionar sector</option>
+              <option value="healthcare">Salud</option>
+              <option value="manufacturing">Manufactura</option>
+              <option value="retail">Comercio Minorista</option>
+              <option value="technology">Tecnología</option>
+              <option value="finance">Finanzas</option>
+              <option value="education">Educación</option>
+              <option value="transportation">Transporte</option>
+              <option value="construction">Construcción</option>
+              <option value="hospitality">Hotelería y Turismo</option>
+              <option value="other">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campos para persona particular -->
+        <div id="individual-fields">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="company">Empresa donde trabajas</label>
+              <input
+                type="text"
+                id="company_individual"
+                name="company_individual"
+                placeholder="Empresa (opcional)"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="position">Cargo o posición</label>
+              <input
+                type="text"
+                id="position"
+                name="position"
+                placeholder="Tu cargo (opcional)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="register-btn">
+          <span class="btn-text">Crear Cuenta</span>
+          <span class="loading">⏳</span>
+        </button>
+      </form>
+
+      <div class="divider">
+        <span>¿Ya tienes cuenta?</span>
+      </div>
+
+      <a href="/login" class="login-link">Iniciar sesión</a>
+    </div>
+
+    <script>
+      document
+        .getElementById("register-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const userType = document.getElementById("user_type").value;
+          let formData = {
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            user_type: userType,
+            position: document.getElementById("position").value,
+          };
+
+          // Agregar campos según el tipo de usuario
+          if (userType === "company") {
+            formData.company = document.getElementById("company").value;
+            formData.company_size =
+              document.getElementById("company_size").value;
+            formData.industry = document.getElementById("industry").value;
+          } else {
+            formData.company =
+              document.getElementById("company_individual").value;
+          }
+
+          const registerBtn = document.getElementById("register-btn");
+          const btnText = registerBtn.querySelector(".btn-text");
+          const loading = registerBtn.querySelector(".loading");
+
+          // Mostrar loading
+          registerBtn.disabled = true;
+          btnText.style.display = "none";
+          loading.classList.add("show");
+
+          // Ocultar mensajes anteriores
+          hideMessages();
+
+          try {
+            const response = await fetch("/api/user/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              showSuccess(
+                "¡Cuenta creada exitosamente! Redirigiendo al login..."
+              );
+              // Redirigir al login
+              setTimeout(() => {
+                window.location.href = "/login";
+              }, 2000);
+            } else {
+              showError(data.error || "Error al crear la cuenta");
+            }
+          } catch (error) {
+            showError("Error de conexión. Intenta nuevamente.");
+          } finally {
+            // Ocultar loading
+            registerBtn.disabled = false;
+            btnText.style.display = "inline";
+            loading.classList.remove("show");
+          }
+        });
+
+      function showError(message) {
+        const errorDiv = document.getElementById("error-message");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+      }
+
+      function showSuccess(message) {
+        const successDiv = document.getElementById("success-message");
+        successDiv.textContent = message;
+        successDiv.style.display = "block";
+      }
+
+      function hideMessages() {
+        document.getElementById("error-message").style.display = "none";
+        document.getElementById("success-message").style.display = "none";
+      }
+
+      // Manejar cambio de tipo de usuario
+      document.addEventListener("DOMContentLoaded", function () {
+        const userTypeSelect = document.getElementById("user_type");
+        const companyFields = document.getElementById("company-fields");
+        const individualFields = document.getElementById("individual-fields");
+
+        userTypeSelect.addEventListener("change", function () {
+          if (this.value === "company") {
+            companyFields.style.display = "block";
+            individualFields.style.display = "none";
+          } else {
+            companyFields.style.display = "none";
+            individualFields.style.display = "block";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
