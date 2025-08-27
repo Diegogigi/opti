@@ -20,8 +20,12 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Inicializar la base de datos
-db.init_app(app)
+# Inicializar la base de datos solo si hay configuración
+if app.config.get("SQLALCHEMY_DATABASE_URI"):
+    db.init_app(app)
+    print("✅ Base de datos inicializada")
+else:
+    print("⚠️ No se configuró base de datos - modo sin BD")
 
 # ====== FERIADOS CHILE 2025 ======
 # Campos: date (YYYY-MM-DD), name, irrenunciable (bool), scope: "nacional" | "electoral" | "regional:XV" | "local:chillan"
@@ -1304,9 +1308,17 @@ def api_get_holidays(year: int):
 # ====== ENDPOINTS DE BASE DE DATOS ======
 
 
+def check_db_available():
+    """Verificar si la base de datos está disponible"""
+    return app.config.get("SQLALCHEMY_DATABASE_URI") is not None
+
+
 @app.post("/api/user/register")
 def api_register_user():
     """Registrar nuevo usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         data = request.get_json(force=True)
         email = data.get("email")
@@ -1348,6 +1360,9 @@ def api_register_user():
 @app.post("/api/user/login")
 def api_login_user():
     """Login de usuario por email"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         data = request.get_json(force=True)
         email = data.get("email")
@@ -1384,6 +1399,9 @@ def api_login_user():
 @app.post("/api/pattern/save")
 def api_save_pattern():
     """Guardar patrón de turnos"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         data = request.get_json(force=True)
         user_id = data.get("user_id")
@@ -1422,6 +1440,9 @@ def api_save_pattern():
 @app.get("/api/patterns/<int:user_id>")
 def api_get_patterns(user_id):
     """Obtener patrones de un usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         patterns = ShiftPattern.query.filter_by(user_id=user_id, is_active=True).all()
 
@@ -1449,6 +1470,9 @@ def api_get_patterns(user_id):
 @app.post("/api/vacation/save")
 def api_save_vacation():
     """Guardar vacación"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         data = request.get_json(force=True)
         user_id = data.get("user_id")
@@ -1489,6 +1513,9 @@ def api_save_vacation():
 @app.get("/api/vacations/<int:user_id>")
 def api_get_vacations(user_id):
     """Obtener vacaciones de un usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
     try:
         vacations = (
             Vacation.query.filter_by(user_id=user_id)
