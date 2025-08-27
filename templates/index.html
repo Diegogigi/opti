@@ -1683,6 +1683,37 @@
       💾 Guardado automáticamente
     </div>
 
+    <div
+      class="config-controls"
+      style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        z-index: 1000;
+      "
+    >
+      <button
+        id="resetConfigBtn"
+        style="
+          background: var(--warn);
+          color: white;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        "
+        title="Resetear configuración a valores por defecto"
+        onmouseover="this.style.opacity='0.8'"
+        onmouseout="this.style.opacity='1'"
+      >
+        🔄 Resetear
+      </button>
+    </div>
+
     <button
       class="sidebar-toggle"
       id="sidebarToggle"
@@ -1901,55 +1932,134 @@
         showSaveIndicator();
       }
 
-      function loadPreferences() {
-        const saved = localStorage.getItem("turnos_preferences");
-        if (saved) {
-          const prefs = JSON.parse(saved);
-          state.preferences = { ...state.preferences, ...prefs };
+      async function loadPreferences() {
+        try {
+          // Cargar configuración desde la base de datos
+          const response = await fetch("/api/user/app-settings");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              const settings = data.settings;
 
-          // NO cargar fechas guardadas - siempre usar fechas actuales
-          // state.start, state.end, state.patternStart ya están configurados con fechas actuales
+              // Configurar fechas por defecto (siempre usar fechas actuales para nuevos usuarios)
+              const today = new Date();
+              const nextMonth = new Date(
+                today.getFullYear(),
+                today.getMonth() + 1,
+                today.getDate()
+              );
 
-          // Solo cargar configuraciones que no sean fechas
-          state.patternPreset = prefs.patternPreset || state.patternPreset;
-          state.shiftType = prefs.shiftType || state.shiftType;
-          state.vacationCalculation =
-            prefs.vacationCalculation || state.vacationCalculation;
-          state.pattern = prefs.pattern || state.pattern;
+              state.start =
+                settings.default_start_date ||
+                today.toISOString().split("T")[0];
+              state.end =
+                settings.default_end_date ||
+                nextMonth.toISOString().split("T")[0];
+              state.patternStart =
+                settings.default_pattern_start ||
+                today.toISOString().split("T")[0];
 
-          state.strategy = "max_free"; // Siempre maximizar días libres
-          state.vacBudget = 15; // Cupo más generoso por defecto
+              // Cargar configuraciones guardadas
+              state.patternPreset = settings.default_pattern_preset || "2x2";
+              state.shiftType = settings.default_shift_type || "day";
+              state.vacationCalculation =
+                settings.default_vacation_calculation || "traditional";
+              state.pattern = settings.default_pattern || "D,D,L,L,N,N";
+              state.vacBudget = settings.default_vacation_budget || 15;
+              state.minWin = settings.default_min_win || 7;
+              state.maxWin = settings.default_max_win || 14;
 
-          // NO cargar vacaciones guardadas - siempre empezar limpio
-          state.vacations = new Set();
+              // Cargar overrides si existen
+              if (
+                settings.overrides &&
+                Object.keys(settings.overrides).length > 0
+              ) {
+                state.overrides = settings.overrides;
+              }
 
-          // Update UI con fechas actuales
-          document.getElementById("start").value = state.start;
-          document.getElementById("end").value = state.end;
-          document.getElementById("patternStart").value = state.patternStart;
+              // Cargar última configuración usada si existe
+              if (
+                settings.last_used_config &&
+                Object.keys(settings.last_used_config).length > 0
+              ) {
+                const lastConfig = settings.last_used_config;
+                state.start = lastConfig.start || state.start;
+                state.end = lastConfig.end || state.end;
+                state.patternStart =
+                  lastConfig.patternStart || state.patternStart;
+                state.pattern = lastConfig.pattern || state.pattern;
+                state.patternPreset =
+                  lastConfig.patternPreset || state.patternPreset;
+                state.shiftType = lastConfig.shiftType || state.shiftType;
+                state.vacationCalculation =
+                  lastConfig.vacationCalculation || state.vacationCalculation;
+                state.vacBudget = lastConfig.vacBudget || state.vacBudget;
+                state.minWin = lastConfig.minWin || state.minWin;
+                state.maxWin = lastConfig.maxWin || state.maxWin;
+                if (lastConfig.overrides) {
+                  state.overrides = lastConfig.overrides;
+                }
+              }
 
-          document.getElementById("patternPreset").value = state.patternPreset;
-          document.getElementById("shiftType").value = state.shiftType;
-          document.getElementById("vacationCalculation").value =
-            state.vacationCalculation;
-          document.getElementById("pattern").value = state.pattern;
-
-          document.getElementById("autoSave").checked =
-            state.preferences.autoSave;
-
-          // Initialize pattern field after loading preferences
-          initPatternField();
-
-          buildCalendar();
-        } else {
-          // Si no hay preferencias guardadas, configurar UI con fechas actuales
-          document.getElementById("start").value = state.start;
-          document.getElementById("end").value = state.end;
-          document.getElementById("patternStart").value = state.patternStart;
-          document.getElementById("pattern").value = state.pattern;
-
-          buildCalendar();
+              // Configurar auto-save
+              state.preferences.autoSave = settings.auto_save_enabled !== false;
+            } else {
+              // Si no hay configuración, usar valores por defecto
+              setupDefaultPreferences();
+            }
+          } else {
+            // Si hay error, usar valores por defecto
+            setupDefaultPreferences();
+          }
+        } catch (error) {
+          console.error("Error al cargar configuración:", error);
+          // En caso de error, usar valores por defecto
+          setupDefaultPreferences();
         }
+
+        // Actualizar UI
+        updateUIFromState();
+        initPatternField();
+        buildCalendar();
+      }
+
+      function setupDefaultPreferences() {
+        // Configurar fechas por defecto
+        const today = new Date();
+        const nextMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() + 1,
+          today.getDate()
+        );
+
+        state.start = today.toISOString().split("T")[0];
+        state.end = nextMonth.toISOString().split("T")[0];
+        state.patternStart = today.toISOString().split("T")[0];
+        state.pattern = "D,D,L,L,N,N";
+        state.patternPreset = "2x2";
+        state.shiftType = "day";
+        state.vacationCalculation = "traditional";
+        state.vacBudget = 15;
+        state.minWin = 7;
+        state.maxWin = 14;
+        state.overrides = {};
+        state.preferences.autoSave = true;
+      }
+
+      function updateUIFromState() {
+        // Actualizar campos de fecha
+        document.getElementById("start").value = state.start;
+        document.getElementById("end").value = state.end;
+        document.getElementById("patternStart").value = state.patternStart;
+
+        // Actualizar otros campos
+        document.getElementById("patternPreset").value = state.patternPreset;
+        document.getElementById("shiftType").value = state.shiftType;
+        document.getElementById("vacationCalculation").value =
+          state.vacationCalculation;
+        document.getElementById("pattern").value = state.pattern;
+        document.getElementById("autoSave").checked =
+          state.preferences.autoSave;
       }
 
       function showSaveIndicator() {
@@ -1960,6 +2070,75 @@
           indicator.classList.remove("show");
           indicator.style.transform = "translateY(0)";
         }, 2000);
+      }
+
+      // Función para guardar configuración automáticamente
+      async function saveUserConfiguration() {
+        if (!state.preferences.autoSave) return;
+
+        try {
+          const configData = {
+            start: state.start,
+            end: state.end,
+            patternStart: state.patternStart,
+            pattern: state.pattern,
+            patternPreset: state.patternPreset,
+            shiftType: state.shiftType,
+            vacationCalculation: state.vacationCalculation,
+            vacBudget: state.vacBudget,
+            minWin: state.minWin,
+            maxWin: state.maxWin,
+            overrides: state.overrides,
+          };
+
+          const response = await fetch("/api/user/save-current-config", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(configData),
+          });
+
+          if (response.ok) {
+            console.log("Configuración guardada automáticamente");
+          }
+        } catch (error) {
+          console.error("Error al guardar configuración:", error);
+        }
+      }
+
+      // Función para guardar configuración por defecto
+      async function saveDefaultConfiguration() {
+        try {
+          const configData = {
+            default_start_date: state.start,
+            default_end_date: state.end,
+            default_pattern_start: state.patternStart,
+            default_pattern: state.pattern,
+            default_pattern_preset: state.patternPreset,
+            default_shift_type: state.shiftType,
+            default_vacation_calculation: state.vacationCalculation,
+            default_vacation_budget: state.vacBudget,
+            default_min_win: state.minWin,
+            default_max_win: state.maxWin,
+            overrides: state.overrides,
+            auto_save_enabled: state.preferences.autoSave,
+          };
+
+          const response = await fetch("/api/user/app-settings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(configData),
+          });
+
+          if (response.ok) {
+            console.log("Configuración por defecto guardada");
+          }
+        } catch (error) {
+          console.error("Error al guardar configuración por defecto:", error);
+        }
       }
 
       // Función para crear explicación detallada de vacaciones
@@ -3143,12 +3322,12 @@
               const user = data.user;
               document.getElementById("user-name").textContent = user.name;
               document.getElementById("user-email").textContent = user.email;
-              
+
               // Mostrar botón de dashboard para empresas
               const dashboardBtn = document.getElementById("dashboard-btn");
               if (user.user_type === "company") {
                 dashboardBtn.style.display = "inline-block";
-                dashboardBtn.addEventListener("click", function() {
+                dashboardBtn.addEventListener("click", function () {
                   window.location.href = "/dashboard";
                 });
               }
@@ -3177,6 +3356,80 @@
 
       // Cargar información del usuario al iniciar
       loadUserInfo();
+
+      // Configurar botón de resetear configuración
+      document
+        .getElementById("resetConfigBtn")
+        .addEventListener("click", async function () {
+          if (
+            confirm(
+              "¿Estás seguro de que quieres resetear tu configuración a valores por defecto? Esta acción no se puede deshacer."
+            )
+          ) {
+            try {
+              const response = await fetch("/api/user/reset-config", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+
+              if (response.ok) {
+                alert(
+                  "Configuración reseteada correctamente. La página se recargará."
+                );
+                window.location.reload();
+              } else {
+                alert("Error al resetear la configuración");
+              }
+            } catch (error) {
+              console.error("Error al resetear configuración:", error);
+              alert("Error al resetear la configuración");
+            }
+          }
+        });
+
+      // Guardar configuración automáticamente cuando cambien los valores
+      function setupAutoSave() {
+        const inputs = [
+          "start",
+          "end",
+          "patternStart",
+          "pattern",
+          "patternPreset",
+          "shiftType",
+          "vacationCalculation",
+        ];
+
+        inputs.forEach((inputId) => {
+          const element = document.getElementById(inputId);
+          if (element) {
+            element.addEventListener("change", function () {
+              // Actualizar estado
+              state[inputId] = this.value;
+
+              // Guardar automáticamente después de un pequeño delay
+              setTimeout(() => {
+                saveUserConfiguration();
+              }, 1000);
+            });
+          }
+        });
+
+        // También guardar cuando cambie el auto-save
+        const autoSaveCheckbox = document.getElementById("autoSave");
+        if (autoSaveCheckbox) {
+          autoSaveCheckbox.addEventListener("change", function () {
+            state.preferences.autoSave = this.checked;
+            saveDefaultConfiguration();
+          });
+        }
+      }
+
+      // Configurar auto-save después de cargar la página
+      setTimeout(() => {
+        setupAutoSave();
+      }, 1000);
     </script>
   </body>
 </html>

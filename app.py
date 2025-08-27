@@ -50,7 +50,7 @@ login_manager.login_message_category = "info"
 @login_manager.user_loader
 def load_user(user_id):
     """Cargar usuario para Flask-Login"""
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 # Inicializar la base de datos solo si hay configuración y está disponible
@@ -559,7 +559,7 @@ def dashboard():
 def index():
     """Página principal - requiere autenticación"""
     try:
-        return render_template("index.html")
+    return render_template("index.html")
     except Exception as e:
         return f"Error al cargar la aplicación: {str(e)}", 500
 
@@ -600,10 +600,10 @@ def api_build():
 
     return jsonify(
         {
-            "schedule": sched,
-            "holidays": hols,
-            "summary": {"L": L, "D": D, "N": N, "H": H, "Irr": Irr, "Loc": Loc},
-            "useWeekend": weekend == "si",
+        "schedule": sched,
+        "holidays": hols,
+        "summary": {"L": L, "D": D, "N": N, "H": H, "Irr": Irr, "Loc": Loc},
+        "useWeekend": weekend == "si",
         }
     )
 
@@ -746,7 +746,7 @@ def api_suggest():
             # Encontrar feriados en el rango
             holiday_dates = set()
             for day in sched:
-                if hols.get(day["date"]):
+        if hols.get(day["date"]):
                     holiday_dates.add(day["date"])
 
             for holiday_date in holiday_dates:
@@ -826,17 +826,17 @@ def api_suggest():
 
         # Estrategia 3: Minimizar días de trabajo sacrificados (Optimizada)
         def strategy_minimize_work_loss():
-            results = []
-            n = len(sched)
+    results = []
+    n = len(sched)
 
-            for i in range(n):
-                for length in range(min_win, max_win + 1):
-                    if i + length - 1 >= n:
-                        break
+    for i in range(n):
+        for length in range(min_win, max_win + 1):
+            if i + length - 1 >= n:
+                break
                     window = sched[i : i + length]
-                    vac_needed = 0
-                    hol_count = 0
-                    irr_count = 0
+            vac_needed = 0
+            hol_count = 0
+            irr_count = 0
                     work_days_saved = 0
                     night_shifts_avoided = 0
                     day_shifts_avoided = 0
@@ -997,27 +997,27 @@ def api_suggest():
                     irr_count = 0
                     seasonal_bonus = 0
 
-                    for day in window:
-                        hs = hols.get(day["date"], [])
-                        if not day_is_free(day):
-                            vac_needed += 1
+            for day in window:
+                hs = hols.get(day["date"], [])
+                if not day_is_free(day):
+                    vac_needed += 1
                             seasonal_bonus += get_season_bonus(day["date"])
-                        if hs:
-                            hol_count += 1
-                            if any(h["irrenunciable"] for h in hs):
-                                irr_count += 1
+                if hs:
+                    hol_count += 1
+                    if any(h["irrenunciable"] for h in hs):
+                        irr_count += 1
 
-                    if vac_needed <= vac_budget:
+            if vac_needed <= vac_budget:
                         # Score con bonus de temporada
                         seasonal_score = (length + seasonal_bonus) / max(1, vac_needed)
                         results.append(
                             {
-                                "start": window[0]["date"],
-                                "end": window[-1]["date"],
-                                "len": length,
-                                "used": vac_needed,
-                                "holCount": hol_count,
-                                "irrCount": irr_count,
+                    "start": window[0]["date"],
+                    "end": window[-1]["date"],
+                    "len": length,
+                    "used": vac_needed,
+                    "holCount": hol_count,
+                    "irrCount": irr_count,
                                 "score": round(seasonal_score, 2),
                                 "strategy": "seasonal_optimization",
                                 "ai_reason": f"Temporada preferida + {seasonal_bonus:.1f} bonus",
@@ -1274,12 +1274,12 @@ def api_export_ics():
         uid = f"vac-{dt_start}-{dt_end}@turnos-app"
         lines.extend(
             [
-                "BEGIN:VEVENT",
-                f"UID:{uid}",
-                f"DTSTAMP:{now}",
-                f"DTSTART;VALUE=DATE:{dt_start}",
-                f"DTEND;VALUE=DATE:{dt_end}",
-                "SUMMARY:Vacaciones",
+            "BEGIN:VEVENT",
+            f"UID:{uid}",
+            f"DTSTAMP:{now}",
+            f"DTSTART;VALUE=DATE:{dt_start}",
+            f"DTEND;VALUE=DATE:{dt_end}",
+            "SUMMARY:Vacaciones",
                 "END:VEVENT",
             ]
         )
@@ -1893,6 +1893,209 @@ def api_update_company_settings():
         return jsonify({"error": f"Error al actualizar configuración: {str(e)}"}), 500
 
 
+# ====== ENDPOINTS PARA CONFIGURACIÓN DE USUARIO ======
+
+@app.get("/api/user/app-settings")
+@login_required
+def api_get_user_app_settings():
+    """Obtener configuración de la aplicación del usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    try:
+        from database import UserAppSettings
+        
+        settings = UserAppSettings.query.filter_by(user_id=current_user.id).first()
+        
+        if not settings:
+            # Crear configuración por defecto
+            settings = UserAppSettings(
+                user_id=current_user.id,
+                default_pattern="D,D,L,L,N,N",
+                default_pattern_preset="2x2",
+                default_shift_type="day",
+                default_vacation_calculation="traditional",
+                default_vacation_budget=15,
+                default_min_win=7,
+                default_max_win=14,
+                auto_save_enabled=True
+            )
+            db.session.add(settings)
+            db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "settings": {
+                "default_start_date": settings.default_start_date,
+                "default_end_date": settings.default_end_date,
+                "default_pattern_start": settings.default_pattern_start,
+                "default_pattern": settings.default_pattern,
+                "default_pattern_preset": settings.default_pattern_preset,
+                "default_shift_type": settings.default_shift_type,
+                "default_vacation_calculation": settings.default_vacation_calculation,
+                "default_vacation_budget": settings.default_vacation_budget,
+                "default_min_win": settings.default_min_win,
+                "default_max_win": settings.default_max_win,
+                "overrides": settings.get_overrides(),
+                "auto_save_enabled": settings.auto_save_enabled,
+                "last_used_config": settings.get_last_config()
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener configuración: {str(e)}"}), 500
+
+
+@app.post("/api/user/app-settings")
+@login_required
+def api_save_user_app_settings():
+    """Guardar configuración de la aplicación del usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    try:
+        from database import UserAppSettings
+        
+        data = request.get_json(force=True)
+        
+        settings = UserAppSettings.query.filter_by(user_id=current_user.id).first()
+        if not settings:
+            settings = UserAppSettings(user_id=current_user.id)
+            db.session.add(settings)
+
+        # Actualizar campos
+        if "default_start_date" in data:
+            settings.default_start_date = data["default_start_date"]
+        if "default_end_date" in data:
+            settings.default_end_date = data["default_end_date"]
+        if "default_pattern_start" in data:
+            settings.default_pattern_start = data["default_pattern_start"]
+        if "default_pattern" in data:
+            settings.default_pattern = data["default_pattern"]
+        if "default_pattern_preset" in data:
+            settings.default_pattern_preset = data["default_pattern_preset"]
+        if "default_shift_type" in data:
+            settings.default_shift_type = data["default_shift_type"]
+        if "default_vacation_calculation" in data:
+            settings.default_vacation_calculation = data["default_vacation_calculation"]
+        if "default_vacation_budget" in data:
+            settings.default_vacation_budget = data["default_vacation_budget"]
+        if "default_min_win" in data:
+            settings.default_min_win = data["default_min_win"]
+        if "default_max_win" in data:
+            settings.default_max_win = data["default_max_win"]
+        if "overrides" in data:
+            settings.set_overrides(data["overrides"])
+        if "auto_save_enabled" in data:
+            settings.auto_save_enabled = data["auto_save_enabled"]
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Configuración guardada correctamente"
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al guardar configuración: {str(e)}"}), 500
+
+
+@app.post("/api/user/save-current-config")
+@login_required
+def api_save_current_config():
+    """Guardar la configuración actual que está usando el usuario"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    try:
+        from database import UserAppSettings
+        
+        data = request.get_json(force=True)
+        
+        settings = UserAppSettings.query.filter_by(user_id=current_user.id).first()
+        if not settings:
+            settings = UserAppSettings(user_id=current_user.id)
+            db.session.add(settings)
+
+        # Guardar la configuración actual
+        settings.set_last_config(data)
+        
+        # También actualizar los valores por defecto si se proporcionan
+        if "start" in data:
+            settings.default_start_date = data["start"]
+        if "end" in data:
+            settings.default_end_date = data["end"]
+        if "patternStart" in data:
+            settings.default_pattern_start = data["patternStart"]
+        if "pattern" in data:
+            settings.default_pattern = data["pattern"]
+        if "patternPreset" in data:
+            settings.default_pattern_preset = data["patternPreset"]
+        if "shiftType" in data:
+            settings.default_shift_type = data["shiftType"]
+        if "vacationCalculation" in data:
+            settings.default_vacation_calculation = data["vacationCalculation"]
+        if "vacBudget" in data:
+            settings.default_vacation_budget = data["vacBudget"]
+        if "minWin" in data:
+            settings.default_min_win = data["minWin"]
+        if "maxWin" in data:
+            settings.default_max_win = data["maxWin"]
+        if "overrides" in data:
+            settings.set_overrides(data["overrides"])
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Configuración actual guardada"
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al guardar configuración actual: {str(e)}"}), 500
+
+
+@app.post("/api/user/reset-config")
+@login_required
+def api_reset_user_config():
+    """Resetear configuración del usuario a valores por defecto"""
+    if not check_db_available():
+        return jsonify({"error": "Base de datos no disponible"}), 503
+
+    try:
+        from database import UserAppSettings
+        
+        settings = UserAppSettings.query.filter_by(user_id=current_user.id).first()
+        if settings:
+            # Resetear a valores por defecto
+            settings.default_start_date = None
+            settings.default_end_date = None
+            settings.default_pattern_start = None
+            settings.default_pattern = "D,D,L,L,N,N"
+            settings.default_pattern_preset = "2x2"
+            settings.default_shift_type = "day"
+            settings.default_vacation_calculation = "traditional"
+            settings.default_vacation_budget = 15
+            settings.default_min_win = 7
+            settings.default_max_win = 14
+            settings.overrides = None
+            settings.last_used_config = None
+            settings.auto_save_enabled = True
+            
+            db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Configuración reseteada a valores por defecto"
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error al resetear configuración: {str(e)}"}), 500
+
+
 @app.get("/health")
 def health_check():
     """Endpoint de salud para verificar que la aplicación funciona"""
@@ -1900,9 +2103,67 @@ def health_check():
         {
             "status": "healthy",
             "database": "available" if db_initialized else "not_configured",
+            "database_url": (
+                "configured"
+                if app.config.get("SQLALCHEMY_DATABASE_URI")
+                else "not_configured"
+            ),
             "timestamp": datetime.utcnow().isoformat(),
         }
     )
+
+
+@app.get("/api/db-status")
+def api_db_status():
+    """Endpoint para verificar el estado detallado de la base de datos"""
+    try:
+        if not check_db_available():
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Base de datos no disponible",
+                        "database_url": "not_configured",
+                    }
+                ),
+                503,
+            )
+
+        # Verificar conexión
+        with app.app_context():
+            # Intentar una consulta simple
+            user_count = User.query.count()
+
+            # Verificar tablas
+            from sqlalchemy import inspect
+
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+
+            return jsonify(
+                {
+                    "status": "healthy",
+                    "message": "Base de datos conectada correctamente",
+                    "database_url": "configured",
+                    "user_count": user_count,
+                    "tables": tables,
+                    "table_count": len(tables),
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
+    except Exception as e:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Error de base de datos: {str(e)}",
+                    "database_url": "error",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            ),
+            500,
+        )
 
 
 @app.get("/api/init-db")

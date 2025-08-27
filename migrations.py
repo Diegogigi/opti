@@ -21,6 +21,7 @@ from database import (
     UserSettings,
     CompanyEmployee,
     CompanySettings,
+    UserAppSettings,
 )
 
 

@@ -216,3 +216,65 @@ class CompanySettings(db.Model):
 
     # Relación
     company = db.relationship("User", backref="company_settings")
+
+
+class UserAppSettings(db.Model):
+    __tablename__ = "user_app_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    # Configuración de rangos de fechas
+    default_start_date = db.Column(db.String(10))  # YYYY-MM-DD
+    default_end_date = db.Column(db.String(10))  # YYYY-MM-DD
+    default_pattern_start = db.Column(db.String(10))  # YYYY-MM-DD
+
+    # Configuración de patrones
+    default_pattern = db.Column(db.String(200))  # "D,D,L,L,N,N"
+    default_pattern_preset = db.Column(db.String(20))  # "2x2", "4x3", etc.
+    default_shift_type = db.Column(db.String(20))  # "day", "night", "mixed"
+
+    # Configuración de vacaciones
+    default_vacation_calculation = db.Column(
+        db.String(20)
+    )  # "traditional", "shift-based", "all-days"
+    default_vacation_budget = db.Column(db.Integer, default=15)
+    default_min_win = db.Column(db.Integer, default=7)
+    default_max_win = db.Column(db.Integer, default=14)
+
+    # Configuración de overrides
+    overrides = db.Column(db.Text)  # JSON string de overrides
+
+    # Configuración de preferencias
+    auto_save_enabled = db.Column(db.Boolean, default=True)
+    last_used_config = db.Column(
+        db.Text
+    )  # JSON string de la última configuración usada
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relación
+    user = db.relationship("User", backref="app_settings")
+
+    def get_overrides(self):
+        """Convertir overrides JSON a diccionario"""
+        if self.overrides:
+            return json.loads(self.overrides)
+        return {}
+
+    def set_overrides(self, overrides_dict):
+        """Convertir diccionario de overrides a JSON"""
+        self.overrides = json.dumps(overrides_dict)
+
+    def get_last_config(self):
+        """Obtener la última configuración usada"""
+        if self.last_used_config:
+            return json.loads(self.last_used_config)
+        return {}
+
+    def set_last_config(self, config_dict):
+        """Guardar la última configuración usada"""
+        self.last_used_config = json.dumps(config_dict)
