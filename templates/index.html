@@ -1,0 +1,3075 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Planificador de Turnos y Vacaciones — Chile</title>
+    <style>
+      :root[data-theme="dark"] {
+        --bg: #0f172a;
+        --panel: #111827;
+        --muted: #9ca3af;
+        --acc: #22c55e;
+        --acc2: #60a5fa;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --chip: #1f2937;
+        --text: #e5e7eb;
+        --border: #1f2937;
+        --input-bg: #0b1227;
+        --input-border: #374151;
+      }
+      :root[data-theme="light"] {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --muted: #64748b;
+        --acc: #16a34a;
+        --acc2: #2563eb;
+        --warn: #d97706;
+        --bad: #dc2626;
+        --chip: #f1f5f9;
+        --text: #1e293b;
+        --border: #e2e8f0;
+        --input-bg: #ffffff;
+        --input-border: #cbd5e1;
+      }
+
+      :root[data-theme="light"] header {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.98),
+          rgba(248, 250, 252, 0.95)
+        );
+        border-bottom-color: #e2e8f0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      :root[data-theme="light"] .theme-toggle {
+        background: rgba(0, 0, 0, 0.08);
+        border-color: rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      :root[data-theme="light"] .theme-toggle:hover {
+        background: rgba(0, 0, 0, 0.12);
+        border-color: rgba(0, 0, 0, 0.2);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, var(--bg), var(--bg));
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Ubuntu,
+          "Helvetica Neue", Arial;
+        color: var(--text);
+        transition: background 0.3s ease;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+      header {
+        padding: 20px 32px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(
+          135deg,
+          rgba(17, 24, 39, 0.98),
+          rgba(31, 41, 55, 0.95)
+        );
+        backdrop-filter: blur(20px);
+        position: sticky;
+        top: 0;
+        z-index: 9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 50%,
+            rgba(96, 165, 250, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(34, 197, 94, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 40% 80%,
+            rgba(245, 158, 11, 0.1) 0%,
+            transparent 50%
+          );
+        pointer-events: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        background: linear-gradient(135deg, #60a5fa, #22c55e, #f59e0b);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        transition: all 0.3s ease;
+        cursor: default;
+        text-align: center;
+        position: relative;
+        animation: gradientShift 3s ease-in-out infinite;
+      }
+
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      h1:hover {
+        transform: scale(1.05);
+        filter: brightness(1.2);
+      }
+
+      h1::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(90deg, #60a5fa, #22c55e);
+        border-radius: 2px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      h1:hover::after {
+        opacity: 1;
+      }
+      .theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 32px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        padding: 8px;
+        cursor: pointer;
+        color: var(--text);
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+        transition: all 0.3s ease;
+      }
+
+      .wrap.sidebar-collapsed {
+        grid-template-columns: 0 1fr;
+      }
+
+      .sidebar-toggle {
+        position: fixed;
+        top: 100px;
+        left: 20px;
+        z-index: 1000;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        border: 2px solid var(--border);
+      }
+
+      .sidebar-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .sidebar-toggle.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .sidebar-toggle.pulse {
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        50% {
+          box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+        }
+        100% {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      }
+
+      @keyframes loading {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      .card {
+        background: rgba(17, 24, 39, 0.7);
+        backdrop-filter: blur(6px);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+      }
+
+      aside.card {
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: left center;
+      }
+
+      .wrap.sidebar-collapsed aside.card {
+        transform: translateX(-100%) scale(0.95);
+        opacity: 0;
+        pointer-events: none;
+      }
+      :root[data-theme="light"] .card {
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        margin-bottom: 16px;
+      }
+      label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        background: var(--input-bg);
+        color: var(--text);
+        outline: none;
+        transition: all 0.2s ease;
+        font-size: 13px;
+      }
+      input:focus,
+      select:focus {
+        border-color: var(--acc2);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        transform: translateY(-1px);
+        transition: all 0.2s ease;
+      }
+
+      input:not(:focus),
+      select:not(:focus) {
+        transition: all 0.2s ease;
+      }
+
+      /* Touch-friendly improvements for mobile */
+      @media (max-width: 768px) {
+        input,
+        select,
+        button {
+          min-height: 44px; /* iOS recommended touch target size */
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+        }
+
+        button {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .cell {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .table button {
+          min-height: 36px;
+          padding: 8px 12px;
+        }
+
+        /* Improve scrolling on mobile */
+        body {
+          -webkit-overflow-scrolling: touch;
+          overflow-x: hidden;
+        }
+
+        .wrap {
+          overflow-x: hidden;
+        }
+
+        /* Better table scrolling on mobile */
+        .table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .table thead,
+        .table tbody {
+          display: table;
+          width: 100%;
+          table-layout: fixed;
+        }
+
+        /* Optimize calendar for touch */
+        .calendar {
+          touch-action: pan-x pan-y;
+        }
+
+        /* Better button spacing for thumb navigation */
+        .btnbar {
+          gap: 10px;
+        }
+
+        .btnbar button {
+          margin-bottom: 5px;
+        }
+      }
+      button {
+        cursor: pointer;
+        border-color: var(--acc2);
+        background: linear-gradient(180deg, var(--acc2), var(--acc2));
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      }
+      button.secondary {
+        background: var(--panel);
+        border-color: var(--border);
+      }
+      button.secondary:hover {
+        background: var(--input-bg);
+      }
+      button.ghost {
+        background: transparent;
+        border-color: var(--border);
+      }
+      button.ghost:hover {
+        background: var(--chip);
+      }
+      .chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .chip {
+        font-size: 12px;
+        background: var(--chip);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 4px 8px;
+        border-radius: 999px;
+      }
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+      .month {
+        margin-top: 10px;
+      }
+      .month h3 {
+        margin: 8px 2px 12px;
+        font-size: 15px;
+        color: var(--text);
+      }
+      .dow {
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .cell {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        min-height: 94px;
+        padding: 6px;
+        position: relative;
+        background: var(--input-bg);
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .cell:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .cell .d {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .tag {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+      }
+      .tag.h {
+        background: rgba(14, 165, 233, 0.15);
+        border-color: #0ea5e9;
+        color: #7dd3fc;
+      }
+      .tag.i {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: #ef4444;
+        color: #fecaca;
+      }
+      .tag.l {
+        background: rgba(139, 92, 246, 0.15);
+        border-color: #8b5cf6;
+        color: #ddd6fe;
+      }
+      .tag.v {
+        background: rgba(34, 197, 94, 0.15);
+        border-color: #22c55e;
+        color: #bbf7d0;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .legend .item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text);
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+      .dot.h {
+        background: #0ea5e9;
+      }
+      .dot.i {
+        background: #ef4444;
+      }
+      .dot.l {
+        background: #8b5cf6;
+      }
+      .dot.v {
+        background: #22c55e;
+      }
+      .dot.o {
+        background: #a3e635;
+      }
+      .dot.d {
+        background: #fde047;
+      }
+      .dot.n {
+        background: #93c5fd;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      .table th,
+      .table td {
+        border-bottom: 1px solid var(--border);
+        padding: 8px;
+        font-size: 13px;
+        text-align: left;
+      }
+      .table th {
+        background: var(--chip);
+        font-weight: 600;
+      }
+
+      /* Estilos para estrategias de IA */
+      .strategy-consecutive {
+        color: var(--acc);
+        font-weight: 500;
+      }
+
+      .strategy-holiday {
+        color: #ff6b6b;
+        font-weight: 500;
+      }
+
+      .strategy-work {
+        color: #4ecdc4;
+        font-weight: 500;
+      }
+
+      .strategy-bridge {
+        color: #45b7d1;
+        font-weight: 500;
+      }
+
+      .strategy-ai {
+        color: #96ceb4;
+        font-weight: 500;
+      }
+
+      .strategy-seasonal {
+        color: #ffa726;
+        font-weight: 500;
+      }
+
+      .strategy-pattern {
+        color: #9c27b0;
+        font-weight: 500;
+      }
+
+      /* Modal de explicación de vacaciones */
+      .explanation-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+        opacity: 1;
+        transform: scale(1);
+        transition: all 0.2s ease;
+      }
+
+      .explanation-content {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .explanation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .explanation-header h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 18px;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+
+      .close-btn:hover {
+        background: var(--chip);
+        color: var(--text);
+      }
+
+      .explanation-body {
+        padding: 24px;
+      }
+
+      .period-info {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .period-info h4 {
+        margin: 0 0 8px 0;
+        color: var(--text);
+        font-size: 16px;
+      }
+
+      .period-info p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .breakdown-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .breakdown-item {
+        text-align: center;
+        padding: 16px 8px;
+        background: var(--chip);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .breakdown-number {
+        display: block;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--acc);
+        margin-bottom: 4px;
+      }
+
+      .breakdown-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .shifts-info,
+      .holidays-info,
+      .strategy-info,
+      .vacation-usage {
+        margin-bottom: 20px;
+      }
+
+      .shifts-info h4,
+      .holidays-info h4,
+      .strategy-info h4,
+      .vacation-usage h4 {
+        margin: 0 0 12px 0;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .shifts-grid {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .shift-item {
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .shift-item.day {
+        background: #4ecdc4;
+        color: white;
+      }
+
+      .shift-item.night {
+        background: #93c5fd;
+        color: white;
+      }
+
+      .holidays-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .holiday-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: var(--chip);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+
+      .holiday-date {
+        font-weight: 500;
+        color: var(--text);
+        font-size: 12px;
+      }
+
+      .holiday-name {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .strategy-info p {
+        margin: 0 0 8px 0;
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ai-reason {
+        color: var(--acc) !important;
+        font-style: italic;
+        font-size: 12px !important;
+      }
+
+      .vacation-usage p {
+        margin: 0 0 12px 0;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .efficiency-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--chip);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+
+      .efficiency-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--acc), #4ecdc4);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+
+      .efficiency-text {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        text-align: center;
+      }
+
+      .explanation-footer {
+        padding: 20px 24px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+      }
+
+      .btn-secondary {
+        background: var(--acc);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-secondary:hover {
+        background: var(--acc);
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      @media (max-width: 768px) {
+        .explanation-content {
+          width: 95%;
+          max-height: 95vh;
+        }
+
+        .breakdown-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .explanation-header,
+        .explanation-body,
+        .explanation-footer {
+          padding: 16px;
+        }
+      }
+      .pill {
+        font-size: 11px;
+        border: 1px solid var(--border);
+        background: var(--chip);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 2px 8px;
+      }
+      .foot {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .btnbar {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .btnbar button {
+        flex: 1;
+        min-width: 0;
+      }
+      .notice {
+        background: var(--input-bg);
+        border: 1px dashed var(--border);
+        color: var(--text);
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .stat-card {
+        background: var(--chip);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+      }
+      .stat-number {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--acc);
+      }
+      .stat-label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .save-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--acc);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+      }
+
+      .save-indicator.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 768px) {
+        .save-indicator {
+          bottom: 10px;
+          right: 10px;
+          left: 10px;
+          text-align: center;
+          font-size: 11px;
+          padding: 10px;
+        }
+      }
+      .save-indicator.show {
+        opacity: 1;
+      }
+      .preferences-panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 16px;
+      }
+      .preferences-panel h4 {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .pref-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .pref-row label {
+        flex: 1;
+        font-size: 11px;
+      }
+      .pref-row input {
+        width: auto;
+        flex: 0 0 80px;
+      }
+      .pattern-example {
+        background: var(--chip);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+        font-size: 12px;
+      }
+      .pattern-example h5 {
+        margin: 0 0 8px;
+        color: var(--text);
+      }
+      .pattern-example .example {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .pattern-example .day {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .pattern-example .day.d {
+        background: rgba(253, 224, 71, 0.2);
+        color: #fde047;
+        border: 1px solid #fde047;
+      }
+      .pattern-example .day.l {
+        background: rgba(163, 230, 53, 0.2);
+        color: #a3e635;
+        border: 1px solid #a3e635;
+      }
+      .pattern-example .day.n {
+        background: rgba(147, 197, 253, 0.08);
+        color: #93c5fd;
+        border: 1px solid #93c5fd;
+      }
+      .pattern-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .pattern-item {
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 12px;
+      }
+      .pattern-item strong {
+        color: var(--text);
+        display: block;
+        margin-bottom: 6px;
+      }
+      /* Mobile First Responsive Design */
+      @media (max-width: 1024px) {
+        .wrap {
+          grid-template-columns: 1fr;
+          gap: 16px;
+          padding: 16px;
+        }
+        .wrap.sidebar-collapsed {
+          grid-template-columns: 1fr;
+        }
+        .sidebar-toggle {
+          top: 90px;
+          left: 16px;
+          width: 42px;
+          height: 42px;
+          font-size: 16px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        header {
+          padding: 16px 20px;
+        }
+
+        h1 {
+          font-size: 24px;
+          letter-spacing: 0.5px;
+        }
+
+        .wrap {
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .card {
+          padding: 16px;
+          border-radius: 10px;
+        }
+
+        .row {
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .btnbar {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .btnbar button {
+          padding: 12px;
+          font-size: 14px;
+        }
+
+        .sidebar-toggle {
+          top: 80px;
+          left: 12px;
+          width: 40px;
+          height: 40px;
+          font-size: 14px;
+        }
+
+        .calendar {
+          gap: 4px;
+        }
+
+        .cell {
+          min-height: 70px;
+          padding: 4px;
+          border-radius: 8px;
+        }
+
+        .cell .d {
+          font-size: 10px;
+          top: 4px;
+          right: 6px;
+        }
+
+        .tag {
+          font-size: 8px;
+          padding: 1px 4px;
+        }
+
+        .table {
+          font-size: 12px;
+        }
+
+        .table th,
+        .table td {
+          padding: 6px;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+
+        .stat-card {
+          padding: 10px;
+        }
+
+        .stat-number {
+          font-size: 18px;
+        }
+
+        .stat-label {
+          font-size: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        header {
+          padding: 12px 16px;
+        }
+
+        h1 {
+          font-size: 20px;
+        }
+
+        .wrap {
+          padding: 8px;
+          gap: 8px;
+        }
+
+        .card {
+          padding: 12px;
+          border-radius: 8px;
+        }
+
+        .row {
+          gap: 6px;
+          margin-bottom: 10px;
+        }
+
+        input,
+        select,
+        button {
+          padding: 10px;
+          font-size: 14px;
+          border-radius: 6px;
+        }
+
+        .btnbar button {
+          padding: 14px;
+          font-size: 13px;
+        }
+
+        .sidebar-toggle {
+          top: 70px;
+          left: 8px;
+          width: 36px;
+          height: 36px;
+          font-size: 12px;
+        }
+
+        .calendar {
+          gap: 2px;
+        }
+
+        .cell {
+          min-height: 60px;
+          padding: 3px;
+          border-radius: 6px;
+        }
+
+        .cell .d {
+          font-size: 9px;
+          top: 3px;
+          right: 4px;
+        }
+
+        .chip {
+          font-size: 9px;
+          padding: 2px 6px;
+        }
+
+        .tag {
+          font-size: 7px;
+          padding: 1px 3px;
+        }
+
+        .table {
+          font-size: 11px;
+        }
+
+        .table th,
+        .table td {
+          padding: 4px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+
+        .stat-card {
+          padding: 8px;
+        }
+
+        .stat-number {
+          font-size: 16px;
+        }
+
+        .stat-label {
+          font-size: 9px;
+        }
+
+        .month h3 {
+          font-size: 14px;
+          margin: 6px 2px 8px;
+        }
+
+        .dow {
+          font-size: 10px;
+        }
+
+        .legend {
+          gap: 6px;
+        }
+
+        .legend .item {
+          font-size: 10px;
+        }
+
+        .dot {
+          width: 8px;
+          height: 8px;
+        }
+
+        .preferences-panel {
+          padding: 10px;
+        }
+
+        .preferences-panel h4 {
+          font-size: 12px;
+        }
+
+        .pref-row {
+          gap: 6px;
+          margin-bottom: 4px;
+        }
+
+        .pref-row label {
+          font-size: 10px;
+        }
+
+        .pref-row input {
+          flex: 0 0 70px;
+        }
+
+        .notice {
+          padding: 8px;
+          font-size: 11px;
+        }
+
+        .pattern-info {
+          margin-bottom: 10px;
+        }
+
+        .pattern-info .chip {
+          font-size: 8px;
+          padding: 3px 6px;
+        }
+
+        .pattern-info div {
+          font-size: 10px;
+        }
+
+        /* Optimize for very small screens */
+        @media (max-width: 360px) {
+          .wrap {
+            padding: 6px;
+          }
+
+          .card {
+            padding: 10px;
+          }
+
+          .cell {
+            min-height: 50px;
+            padding: 2px;
+          }
+
+          .cell .d {
+            font-size: 8px;
+            top: 2px;
+            right: 3px;
+          }
+
+          .btnbar button {
+            padding: 12px 8px;
+            font-size: 12px;
+          }
+
+          .table {
+            font-size: 10px;
+          }
+
+          .table th,
+          .table td {
+            padding: 3px;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .stat-card {
+            padding: 6px;
+          }
+
+          .stat-number {
+            font-size: 14px;
+          }
+
+          .stat-label {
+            font-size: 8px;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="text-align: center">
+        <h1>OPTI</h1>
+        <div
+          style="
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          "
+        >
+          Planificador de Turnos y Vacaciones
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle">🌙</button>
+    </header>
+
+    <div class="wrap">
+      <aside class="card">
+        <div class="row">
+          <div style="flex: 1">
+            <label>Rango: inicio</label>
+            <input type="date" id="start" />
+          </div>
+          <div style="flex: 1">
+            <label>Rango: fin</label>
+            <input type="date" id="end" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex: 1">
+            <label>Patrón de turnos</label>
+            <select id="patternPreset">
+              <option value="custom">Personalizado</option>
+              <option value="2x2" selected>2x2 (2 trabajo, 2 libre)</option>
+              <option value="4x3">4x3 (4 trabajo, 3 libre)</option>
+              <option value="5x2">5x2 (5 trabajo, 2 libre)</option>
+              <option value="7x7">7x7 (7 trabajo, 7 libre)</option>
+              <option value="3x1">3x1 (3 trabajo, 1 libre)</option>
+              <option value="6x1">6x1 (6 trabajo, 1 libre)</option>
+            </select>
+          </div>
+          <div style="width: 160px">
+            <label>Inicio del patrón</label>
+            <input type="date" id="patternStart" readonly />
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex: 1">
+            <label
+              title="L=Libre, D=Día, N=Noche. Siempre puedes modificar el patrón según tus necesidades"
+              >Patrón personalizado (L=Libre, D=Día, N=Noche)</label
+            >
+            <div style="position: relative">
+              <input
+                id="pattern"
+                value="D,D,L,L,N,N"
+                placeholder="Ej: N,N,L,L,D,D (comienza con noche)"
+              />
+              <div
+                id="patternStatus"
+                style="
+                  position: absolute;
+                  right: 8px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  font-size: 10px;
+                  color: var(--muted);
+                  pointer-events: none;
+                "
+              >
+                Personalizado
+              </div>
+            </div>
+          </div>
+          <div style="width: 160px">
+            <label>Tipo de turno</label>
+            <select id="shiftType">
+              <option value="day" selected>Solo Día</option>
+              <option value="night">Solo Noche</option>
+              <option value="mixed">Mixto (Día/Noche)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex: 1">
+            <label>Cálculo de vacaciones</label>
+            <select id="vacationCalculation">
+              <option value="traditional" selected>Tradicional (L-V)</option>
+              <option value="shift-based">Según turnos</option>
+              <option value="all-days">Todos los días</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pattern-info">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px">
+            <div class="chip" style="font-size: 10px; padding: 4px 8px">
+              <span style="color: #fde047">●</span> Día
+            </div>
+            <div class="chip" style="font-size: 10px; padding: 4px 8px">
+              <span style="color: #93c5fd">●</span> Noche
+            </div>
+            <div class="chip" style="font-size: 10px; padding: 4px 8px">
+              <span style="color: #a3e635">●</span> Libre
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--muted); line-height: 1.4">
+            <strong>Tipos:</strong> Solo Día, Solo Noche, Mixto (D/N)<br />
+            <strong>Patrón:</strong> Siempre editable - puedes modificarlo según
+            tus necesidades<br />
+            <strong>Vacaciones:</strong> Tradicional (L-V), Según turnos, o
+            Todos los días
+          </div>
+        </div>
+
+        <div class="btnbar" style="margin-top: 16px">
+          <button
+            id="build"
+            class="secondary"
+            title="Forzar actualización manual"
+          >
+            📅 Generar
+          </button>
+          <button id="suggest" class="secondary">💡 Sugerir</button>
+          <button id="clearV" class="ghost">🗑️ Limpiar</button>
+        </div>
+        <div class="btnbar" style="margin-top: 8px">
+          <button id="exportIcs" class="ghost">📅 .ics</button>
+          <button id="exportCsv" class="ghost">📊 .csv</button>
+        </div>
+        <div
+          id="holidayStatus"
+          style="
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            display: none;
+          "
+        >
+          🔄 Cargando feriados desde API...
+        </div>
+        <div
+          id="autoUpdateIndicator"
+          style="
+            margin-top: 8px;
+            font-size: 10px;
+            color: var(--muted);
+            text-align: center;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+          "
+        >
+          ⚡ Actualización automática
+        </div>
+
+        <div class="chips" style="margin-top: 12px">
+          <span class="chip" style="font-size: 10px"
+            >Click: Vacaciones | Shift+Click: Cambiar turno</span
+          >
+        </div>
+
+        <div class="notice">
+          <strong>💡 Cómo funciona:</strong> El sistema calcula los turnos desde
+          la fecha de inicio del rango. El patrón se repite cíclicamente desde
+          el primer día del rango. Los feriados y fines de semana se incluyen
+          automáticamente. La IA sugiere las mejores fechas con cupo de 15 días.
+          El cálculo de vacaciones puede ser tradicional (L-V), según turnos, o
+          todos los días. El "Inicio del patrón" se sincroniza automáticamente
+          con el "Rango: inicio".
+        </div>
+
+        <div class="preferences-panel">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+            "
+          >
+            <h4 style="margin: 0; font-size: 13px">💾 Preferencias</h4>
+            <div style="display: flex; gap: 4px">
+              <button
+                id="savePrefs"
+                class="ghost"
+                style="padding: 4px 8px; font-size: 10px"
+              >
+                💾
+              </button>
+              <button
+                id="loadPrefs"
+                class="ghost"
+                style="padding: 4px 8px; font-size: 10px"
+              >
+                📂
+              </button>
+              <button
+                id="clearPrefs"
+                class="ghost"
+                style="padding: 4px 8px; font-size: 10px"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+          <div class="pref-row">
+            <label>Auto-guardar:</label>
+            <input type="checkbox" id="autoSave" checked />
+          </div>
+        </div>
+      </aside>
+
+      <main>
+        <section class="card">
+          <div id="months"></div>
+          <div class="foot" id="summary"></div>
+          <div class="stats-grid" id="statsGrid"></div>
+        </section>
+
+        <section class="card">
+          <h3 style="margin: 0 0 8px">Sugerencias (Top 10)</h3>
+          <div class="row">
+            <div style="flex: 1">
+              <label>Duración mínima (días)</label>
+              <input id="minWin" type="number" min="4" value="7" />
+            </div>
+            <div style="flex: 1">
+              <label>Duración máxima (días)</label>
+              <input id="maxWin" type="number" min="5" value="14" />
+            </div>
+          </div>
+          <table class="table" id="sugTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Días trabajo</th>
+                <th>Vac. usadas</th>
+                <th>Feriados</th>
+                <th>Score</th>
+                <th>IA Strategy</th>
+                <th>Tomar</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="foot">
+            <strong>🤖 IA Inteligente Avanzada:</strong> El sistema analiza
+            múltiples estrategias para maximizar tus días de vacaciones:
+            <br />🔄 <strong>Consecutivos:</strong> Maximiza días libres
+            consecutivos <br />🎉 <strong>Feriados:</strong> Optimiza alrededor
+            de feriados <br />💪 <strong>Trabajo:</strong> Evita días de trabajo
+            difíciles <br />🌉 <strong>Puentes:</strong> Crea puentes con fines
+            de semana <br />🌞 <strong>Temporada:</strong> Prioriza temporadas
+            preferidas <br />🔍 <strong>Patrón:</strong> Analiza patrones de
+            turnos
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator">
+      💾 Guardado automáticamente
+    </div>
+
+    <button
+      class="sidebar-toggle"
+      id="sidebarToggle"
+      title="Mostrar/Ocultar Panel"
+    >
+      📋
+    </button>
+
+    <script>
+      // Función para generar fechas actuales
+      function getCurrentDates() {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate();
+
+        // Fecha de inicio: hoy
+        const startDate = `${currentYear}-${currentMonth
+          .toString()
+          .padStart(2, "0")}-${currentDay.toString().padStart(2, "0")}`;
+
+        // Fecha de fin: fin del año actual
+        const endDate = `${currentYear}-12-31`;
+
+        return { startDate, endDate };
+      }
+
+      // Obtener fechas actuales
+      const { startDate, endDate } = getCurrentDates();
+
+      const state = {
+        start: startDate,
+        end: endDate,
+        patternStart: startDate,
+        pattern: document.getElementById("pattern").value,
+        patternPreset: document.getElementById("patternPreset").value,
+        shiftType: document.getElementById("shiftType").value,
+        vacationCalculation: document.getElementById("vacationCalculation")
+          .value,
+
+        strategy: "max_free", // Siempre maximizar días libres
+        vacBudget: 15, // Cupo más generoso por defecto
+
+        vacations: new Set(), // fechas ISO
+        schedule: [],
+        holidays: {},
+        overrides: {}, // NUEVO: para cambios manuales de turnos
+        preferences: {
+          autoSave: true,
+          theme: "dark",
+        },
+      };
+
+      // Definir patrones predefinidos
+      const PATTERN_PRESETS = {
+        "2x2": { work: 2, free: 2 },
+        "4x3": { work: 4, free: 3 },
+        "5x2": { work: 5, free: 2 },
+        "7x7": { work: 7, free: 7 },
+        "3x1": { work: 3, free: 1 },
+        "6x1": { work: 6, free: 1 },
+      };
+
+      // Función para generar patrón automáticamente
+      function generatePattern(preset, shiftType) {
+        if (preset === "custom") {
+          // Para patrón personalizado, aplicar el tipo de turno al patrón existente
+          const customPattern = document.getElementById("pattern").value;
+          if (!customPattern) return "L";
+
+          const patternArray = customPattern.split(",").map((s) => s.trim());
+          const newPatternArray = [];
+
+          patternArray.forEach((shift, index) => {
+            if (shift === "L") {
+              // Los días libres se mantienen igual
+              newPatternArray.push("L");
+            } else if (shift === "D" || shift === "N") {
+              // Los días de trabajo se modifican según el tipo seleccionado
+              if (shiftType === "day") {
+                newPatternArray.push("D");
+              } else if (shiftType === "night") {
+                newPatternArray.push("N");
+              } else if (shiftType === "mixed") {
+                // Para mixto, alternar D y N en los días de trabajo
+                const workDayIndex = newPatternArray.filter(
+                  (s) => s !== "L"
+                ).length;
+                newPatternArray.push(workDayIndex % 2 === 0 ? "D" : "N");
+              }
+            }
+          });
+
+          return newPatternArray.join(",");
+        }
+
+        // Para patrones predefinidos
+        const pattern = PATTERN_PRESETS[preset];
+        if (!pattern) return "L";
+
+        const { work, free } = pattern;
+        let patternArray = [];
+
+        // Para patrones predefinidos con tipo mixto, usar lógica especial
+        if (shiftType === "mixed" && preset !== "custom") {
+          // Lógica especial para patrones predefinidos mixtos
+          if (preset === "2x2") {
+            // 2x2 mixto: 2 días + 2 libres + 2 noches + 2 libres
+            return "D,D,L,L,N,N,L,L";
+          } else if (preset === "4x3") {
+            // 4x3 mixto: 2 días + 2 noches + 3 libres
+            return "D,D,N,N,L,L,L";
+          } else if (preset === "5x2") {
+            // 5x2 mixto: 3 días + 2 noches + 2 libres
+            return "D,D,D,N,N,L,L";
+          } else if (preset === "7x7") {
+            // 7x7 mixto: 4 días + 3 noches + 7 libres
+            return "D,D,D,D,N,N,N,L,L,L,L,L,L,L";
+          } else if (preset === "3x1") {
+            // 3x1 mixto: 2 días + 1 noche + 1 libre
+            return "D,D,N,L";
+          } else if (preset === "6x1") {
+            // 6x1 mixto: 3 días + 3 noches + 1 libre
+            return "D,D,D,N,N,N,L";
+          }
+        }
+
+        // Lógica estándar para solo día y solo noche
+        // Generar días de trabajo
+        for (let i = 0; i < work; i++) {
+          if (shiftType === "day") {
+            patternArray.push("D");
+          } else if (shiftType === "night") {
+            patternArray.push("N");
+          }
+        }
+
+        // Generar días libres
+        for (let i = 0; i < free; i++) {
+          patternArray.push("L");
+        }
+
+        return patternArray.join(",");
+      }
+
+      // Función para cargar feriados automáticamente
+      async function loadHolidaysForYear(year) {
+        try {
+          const response = await fetch(`/api/holidays/${year}`);
+          const data = await response.json();
+
+          if (data.error) {
+            console.warn(`Error al cargar feriados para ${year}:`, data.error);
+            return [];
+          }
+
+          console.log(
+            `Feriados cargados para ${year}:`,
+            data.count,
+            "feriados desde",
+            data.source
+          );
+          return data.holidays;
+        } catch (error) {
+          console.error(
+            `Error al conectar con API de feriados para ${year}:`,
+            error
+          );
+          return [];
+        }
+      }
+
+      // Theme management
+      function initTheme() {
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        state.preferences.theme = savedTheme;
+        updateThemeButton();
+      }
+
+      function toggleTheme() {
+        const currentTheme =
+          document.documentElement.getAttribute("data-theme");
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", newTheme);
+        state.preferences.theme = newTheme;
+        localStorage.setItem("theme", newTheme);
+        updateThemeButton();
+        if (state.preferences.autoSave) savePreferences();
+      }
+
+      function updateThemeButton() {
+        const btn = document.getElementById("themeToggle");
+        if (state.preferences.theme === "dark") {
+          btn.textContent = "🌙";
+        } else {
+          btn.textContent = "☀️";
+        }
+      }
+
+      // Preferences management
+      function savePreferences() {
+        const prefs = {
+          ...state.preferences,
+          // NO guardar fechas - siempre usar fechas actuales al iniciar
+          pattern: state.pattern,
+          patternPreset: state.patternPreset,
+          shiftType: state.shiftType,
+          vacationCalculation: state.vacationCalculation,
+
+          strategy: state.strategy,
+          vacBudget: state.vacBudget,
+          // NO guardar vacaciones - siempre empezar limpio
+        };
+        localStorage.setItem("turnos_preferences", JSON.stringify(prefs));
+        showSaveIndicator();
+      }
+
+      function loadPreferences() {
+        const saved = localStorage.getItem("turnos_preferences");
+        if (saved) {
+          const prefs = JSON.parse(saved);
+          state.preferences = { ...state.preferences, ...prefs };
+
+          // NO cargar fechas guardadas - siempre usar fechas actuales
+          // state.start, state.end, state.patternStart ya están configurados con fechas actuales
+
+          // Solo cargar configuraciones que no sean fechas
+          state.patternPreset = prefs.patternPreset || state.patternPreset;
+          state.shiftType = prefs.shiftType || state.shiftType;
+          state.vacationCalculation =
+            prefs.vacationCalculation || state.vacationCalculation;
+          state.pattern = prefs.pattern || state.pattern;
+
+          state.strategy = "max_free"; // Siempre maximizar días libres
+          state.vacBudget = 15; // Cupo más generoso por defecto
+
+          // NO cargar vacaciones guardadas - siempre empezar limpio
+          state.vacations = new Set();
+
+          // Update UI con fechas actuales
+          document.getElementById("start").value = state.start;
+          document.getElementById("end").value = state.end;
+          document.getElementById("patternStart").value = state.patternStart;
+
+          document.getElementById("patternPreset").value = state.patternPreset;
+          document.getElementById("shiftType").value = state.shiftType;
+          document.getElementById("vacationCalculation").value =
+            state.vacationCalculation;
+          document.getElementById("pattern").value = state.pattern;
+
+          document.getElementById("autoSave").checked =
+            state.preferences.autoSave;
+
+          // Initialize pattern field after loading preferences
+          initPatternField();
+
+          buildCalendar();
+        } else {
+          // Si no hay preferencias guardadas, configurar UI con fechas actuales
+          document.getElementById("start").value = state.start;
+          document.getElementById("end").value = state.end;
+          document.getElementById("patternStart").value = state.patternStart;
+          document.getElementById("pattern").value = state.pattern;
+
+          buildCalendar();
+        }
+      }
+
+      function showSaveIndicator() {
+        const indicator = document.getElementById("saveIndicator");
+        indicator.style.transform = "translateY(20px)";
+        indicator.classList.add("show");
+        setTimeout(() => {
+          indicator.classList.remove("show");
+          indicator.style.transform = "translateY(0)";
+        }, 2000);
+      }
+
+      // Función para crear explicación detallada de vacaciones
+      function createVacationExplanation(data) {
+        const {
+          startDate,
+          endDate,
+          totalDays,
+          workDays,
+          freeDays,
+          holidayDays,
+          weekendDays,
+          strategy,
+          aiReason,
+          usedVacations,
+        } = data;
+
+        // Formatear fechas
+        const startFormatted = new Date(startDate).toLocaleDateString("es-CL", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const endFormatted = new Date(endDate).toLocaleDateString("es-CL", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        // Analizar turnos de trabajo
+        const dayShifts = workDays.filter((d) => d.shift === "D").length;
+        const nightShifts = workDays.filter((d) => d.shift === "N").length;
+
+        // Crear explicación según la estrategia
+        let strategyExplanation = "";
+        switch (strategy) {
+          case "max_consecutive":
+            strategyExplanation = `Esta sugerencia maximiza los días libres consecutivos. Encontró ${freeDays.length} días libres en tu patrón de turnos.`;
+            break;
+          case "holiday_optimization":
+            strategyExplanation = `Esta sugerencia optimiza alrededor de ${holidayDays.length} feriado(s) para maximizar tus días libres.`;
+            break;
+          case "minimize_work_loss":
+            strategyExplanation = `Esta sugerencia evita ${dayShifts} turnos de día y ${nightShifts} turnos de noche, priorizando los turnos más difíciles.`;
+            break;
+          case "bridge_optimization":
+            strategyExplanation = `Esta sugerencia crea puentes con fines de semana, conectando ${weekendDays.length} días de fin de semana.`;
+            break;
+          case "seasonal_optimization":
+            strategyExplanation = `Esta sugerencia prioriza una temporada preferida para tus vacaciones.`;
+            break;
+          case "pattern_analysis":
+            strategyExplanation = `Esta sugerencia analiza tu patrón de turnos para identificar las mejores oportunidades.`;
+            break;
+          default:
+            strategyExplanation = `Esta sugerencia utiliza la estrategia de IA más adecuada para tu patrón de turnos.`;
+        }
+
+        return {
+          title: `🎯 Explicación de Vacaciones Sugeridas`,
+          period: `${startFormatted} al ${endFormatted}`,
+          summary: `${totalDays} días de vacaciones necesarios`,
+          breakdown: {
+            workDays: workDays.length,
+            freeDays: freeDays.length,
+            holidayDays: holidayDays.length,
+            weekendDays: weekendDays.length,
+          },
+          shifts: {
+            dayShifts,
+            nightShifts,
+          },
+          strategy: strategyExplanation,
+          aiReason: aiReason,
+          usedVacations: usedVacations,
+          holidays: holidayDays,
+          workDays: workDays,
+        };
+      }
+
+      // Función para mostrar la explicación en un modal
+      function showVacationExplanation(explanation) {
+        // Crear modal
+        const modal = document.createElement("div");
+        modal.className = "explanation-modal";
+        modal.innerHTML = `
+          <div class="explanation-content">
+            <div class="explanation-header">
+              <h3>${explanation.title}</h3>
+              <button class="close-btn" onclick="closeExplanationModal()">×</button>
+            </div>
+
+            <div class="explanation-body">
+              <div class="period-info">
+                <h4>📅 Período: ${explanation.period}</h4>
+                <p><strong>${explanation.summary}</strong></p>
+              </div>
+
+              <div class="breakdown-grid">
+                <div class="breakdown-item">
+                  <span class="breakdown-number">${
+                    explanation.breakdown.workDays
+                  }</span>
+                  <span class="breakdown-label">Días de trabajo</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-number">${
+                    explanation.breakdown.freeDays
+                  }</span>
+                  <span class="breakdown-label">Días libres</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-number">${
+                    explanation.breakdown.holidayDays
+                  }</span>
+                  <span class="breakdown-label">Feriados</span>
+                </div>
+                <div class="breakdown-item">
+                  <span class="breakdown-number">${
+                    explanation.breakdown.weekendDays
+                  }</span>
+                  <span class="breakdown-label">Fines de semana</span>
+                </div>
+              </div>
+
+              ${
+                explanation.shifts.dayShifts > 0 ||
+                explanation.shifts.nightShifts > 0
+                  ? `
+                <div class="shifts-info">
+                  <h4>💼 Turnos que evitas:</h4>
+                  <div class="shifts-grid">
+                    ${
+                      explanation.shifts.dayShifts > 0
+                        ? `<div class="shift-item day">${explanation.shifts.dayShifts} turnos de día</div>`
+                        : ""
+                    }
+                    ${
+                      explanation.shifts.nightShifts > 0
+                        ? `<div class="shift-item night">${explanation.shifts.nightShifts} turnos de noche</div>`
+                        : ""
+                    }
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+
+              ${
+                explanation.holidays.length > 0
+                  ? `
+                <div class="holidays-info">
+                  <h4>🎉 Feriados incluidos:</h4>
+                  <div class="holidays-list">
+                    ${explanation.holidays
+                      .map(
+                        (h) => `
+                      <div class="holiday-item">
+                        <span class="holiday-date">${new Date(
+                          h.date
+                        ).toLocaleDateString("es-CL", {
+                          day: "numeric",
+                          month: "short",
+                        })}</span>
+                        <span class="holiday-name">${h.name}</span>
+                      </div>
+                    `
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+
+              <div class="strategy-info">
+                <h4>🤖 Por qué la IA sugirió estos días:</h4>
+                <p>${explanation.strategy}</p>
+                <p class="ai-reason"><em>"${explanation.aiReason}"</em></p>
+              </div>
+
+              <div class="vacation-usage">
+                <h4>📊 Uso de vacaciones:</h4>
+                <p>Usarás <strong>${
+                  explanation.usedVacations
+                } días de vacaciones</strong> para cubrir <strong>${
+          explanation.totalDays || explanation.usedVacations
+        } días de trabajo</strong></p>
+                <div class="efficiency-bar">
+                  <div class="efficiency-fill" style="width: ${
+                    ((explanation.breakdown.freeDays +
+                      explanation.breakdown.holidayDays +
+                      explanation.breakdown.weekendDays) /
+                      Math.max(
+                        1,
+                        explanation.totalDays +
+                          explanation.breakdown.freeDays +
+                          explanation.breakdown.holidayDays +
+                          explanation.breakdown.weekendDays
+                      )) *
+                    100
+                  }%"></div>
+                </div>
+                <p class="efficiency-text">Eficiencia: ${Math.round(
+                  ((explanation.breakdown.freeDays +
+                    explanation.breakdown.holidayDays +
+                    explanation.breakdown.weekendDays) /
+                    Math.max(
+                      1,
+                      explanation.totalDays +
+                        explanation.breakdown.freeDays +
+                        explanation.breakdown.holidayDays +
+                        explanation.breakdown.weekendDays
+                    )) *
+                    100
+                )}% de días libres</p>
+              </div>
+            </div>
+
+            <div class="explanation-footer">
+              <button class="btn-secondary" onclick="closeExplanationModal()">Entendido</button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Cerrar modal al hacer clic fuera del contenido
+        modal.addEventListener("click", function (e) {
+          if (e.target === modal) {
+            closeExplanationModal();
+          }
+        });
+
+        // Cerrar modal con tecla Escape
+        const handleEscape = function (e) {
+          if (e.key === "Escape") {
+            closeExplanationModal();
+          }
+        };
+        document.addEventListener("keydown", handleEscape);
+
+        // Limpiar event listener cuando se cierre el modal
+        modal.addEventListener("remove", function () {
+          document.removeEventListener("keydown", handleEscape);
+        });
+      }
+
+      // Función para cerrar el modal de explicación correctamente
+      function closeExplanationModal() {
+        const modal = document.querySelector(".explanation-modal");
+        if (modal) {
+          // Agregar animación de salida
+          modal.style.opacity = "0";
+          modal.style.transform = "scale(0.9)";
+
+          setTimeout(() => {
+            // Remover el modal del DOM
+            modal.remove();
+          }, 200);
+        }
+      }
+
+      function $(id) {
+        return document.getElementById(id);
+      }
+      function fmtMonthTitle(y, m) {
+        const d = new Date(y, m - 1, 1);
+        return d.toLocaleDateString("es-CL", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+      function isWeekend(d) {
+        const dt = new Date(d + "T00:00:00");
+        const wk = dt.getDay(); // 0 dom .. 6 sáb
+        return wk === 0 || wk === 6;
+      }
+
+      async function buildCalendar(isAutoUpdate = false) {
+        try {
+          // sync inputs
+          state.start = $("start").value;
+          state.end = $("end").value;
+          state.patternStart = $("patternStart").value;
+          state.patternPreset = $("patternPreset").value;
+          state.shiftType = $("shiftType").value;
+          state.vacationCalculation = $("vacationCalculation").value;
+
+          // Siempre usar el valor del campo de patrón personalizado
+          state.pattern = $("pattern").value;
+
+          state.strategy = "max_free"; // Siempre maximizar días libres
+          state.vacBudget = 15; // Cupo más generoso por defecto
+
+          // Validar fechas
+          if (!state.start || !state.end) {
+            throw new Error(
+              "Por favor, selecciona fechas de inicio y fin válidas"
+            );
+          }
+
+          if (new Date(state.start) > new Date(state.end)) {
+            throw new Error(
+              "La fecha de inicio no puede ser posterior a la fecha de fin"
+            );
+          }
+
+          // Validar patrón
+          if (!state.pattern || !state.pattern.trim()) {
+            throw new Error("Por favor, ingresa un patrón de turnos válido");
+          }
+
+          // Show loading indicator
+          const monthsDiv = $("months");
+          const loadingText = isAutoUpdate
+            ? "🔄 Actualizando automáticamente..."
+            : "🔄 Generando calendario...";
+          const isMobile = window.innerWidth <= 768;
+          const loadingStyle = isMobile
+            ? "text-align: center; padding: 15px; color: var(--muted); font-size: 14px;"
+            : "text-align: center; padding: 20px; color: var(--muted);";
+
+          // Add a subtle loading animation
+          const loadingHTML = `
+            <div style="${loadingStyle}">
+              <div style="margin-bottom: 8px;">${loadingText}</div>
+              <div style="width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto; overflow: hidden;">
+                <div style="width: 40px; height: 100%; background: var(--acc); border-radius: 2px; animation: loading 1.5s infinite;"></div>
+              </div>
+            </div>
+          `;
+          monthsDiv.innerHTML = loadingHTML;
+
+          const requestData = {
+            start: state.start,
+            end: state.end,
+            patternStart: state.patternStart,
+            pattern: state.pattern,
+            vacationCalculation: state.vacationCalculation,
+            overrides: state.overrides, // NUEVO
+          };
+
+          const res = await fetch("/api/build", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData),
+          });
+          const data = await res.json();
+
+          state.schedule = data.schedule;
+          state.holidays = data.holidays;
+
+          renderMonths();
+          renderStats(data.summary);
+          $("summary").innerHTML =
+            `Resumen: <span class="pill">Libre: ${data.summary.L}</span> ` +
+            `<span class="pill">Día: ${data.summary.D}</span> ` +
+            `<span class="pill">Noche: ${data.summary.N}</span> ` +
+            `<span class="pill">Feriados: ${data.summary.H} (Irr: ${
+              data.summary.Irr
+            }${
+              data.summary.Loc ? ", Locales: " + data.summary.Loc : ""
+            })</span> ` +
+            `<span class="pill">Vacaciones: ${state.vacations.size}</span>`;
+
+          if (state.preferences.autoSave) savePreferences();
+
+          // Show success indicator
+          const indicator = document.getElementById("autoUpdateIndicator");
+          if (indicator && isAutoUpdate) {
+            indicator.style.opacity = "1";
+            indicator.innerHTML = "✅ Actualizado";
+            setTimeout(() => {
+              indicator.style.opacity = "0.7";
+              indicator.innerHTML = "⚡ Actualización automática";
+            }, 2000);
+          }
+        } catch (error) {
+          console.error("Error al generar calendario:", error);
+          const monthsDiv = $("months");
+          const isMobile = window.innerWidth <= 768;
+          const errorStyle = isMobile
+            ? "text-align: center; padding: 15px; color: var(--bad); font-size: 13px; line-height: 1.4;"
+            : "text-align: center; padding: 20px; color: var(--bad);";
+          monthsDiv.innerHTML = `<div style="${errorStyle}">❌ Error: ${error.message}</div>`;
+        }
+      }
+
+      function dayIsFree(day) {
+        const isWknd = isWeekend(day.date);
+        const isHoliday = (state.holidays[day.date] || []).length > 0;
+        if (state.vacationCalculation === "traditional")
+          return isWknd || isHoliday;
+        if (state.vacationCalculation === "shift-based")
+          return day.kind === "L" || isWknd || isHoliday;
+        if (state.vacationCalculation === "all-days") return isHoliday;
+        return isWknd || isHoliday;
+      }
+
+      function renderStats(summary) {
+        const statsGrid = document.getElementById("statsGrid");
+        const totalDays = summary.L + summary.D + summary.N;
+        const vacationDays = state.vacations.size;
+        const remainingVac = state.vacBudget - vacationDays;
+        statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-number">${totalDays}</div>
+          <div class="stat-label">Total días</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${vacationDays}</div>
+          <div class="stat-label">Vacaciones usadas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${remainingVac}</div>
+          <div class="stat-label">Vacaciones restantes</div>
+        </div>
+
+      `;
+      }
+
+      function renderMonths() {
+        const months = {};
+        state.schedule.forEach((d) => {
+          const ym = d.date.slice(0, 7);
+          (months[ym] ||= []).push(d);
+        });
+
+        const monthsDiv = $("months");
+        monthsDiv.innerHTML = "";
+
+        const DOW = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+        Object.keys(months).forEach((ym) => {
+          const [Y, M] = ym.split("-").map(Number);
+          const cont = document.createElement("div");
+          cont.className = "month";
+          cont.innerHTML = `<h3>${fmtMonthTitle(Y, M)}</h3>`;
+
+          const grid = document.createElement("div");
+          grid.className = "calendar";
+
+          // header dow
+          for (let i = 0; i < 7; i++) {
+            const el = document.createElement("div");
+            el.className = "dow";
+            el.textContent = DOW[i];
+            grid.appendChild(el);
+          }
+
+          // leading blanks - calcular offset basado en el día 1 del mes
+          const firstOfMonth = new Date(Y, M - 1, 1);
+          const offset = firstOfMonth.getDay();
+
+          for (let i = 0; i < offset; i++) {
+            const pad = document.createElement("div");
+            pad.className = "cell";
+            pad.style.visibility = "hidden";
+            grid.appendChild(pad);
+          }
+
+          // days
+          months[ym].forEach((item) => {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            const num = parseInt(item.date.slice(-2), 10);
+            const d = document.createElement("div");
+            d.className = "d";
+            d.textContent = num;
+
+            // Determinar si el día es libre según el tipo de cálculo
+            const isWknd = isWeekend(item.date);
+            const isHoliday = (state.holidays[item.date] || []).length > 0;
+
+            let isFree = false;
+            if (state.vacationCalculation === "traditional") {
+              // Tradicional: solo lunes a viernes cuentan como trabajo
+              isFree = isWknd || isHoliday;
+            } else if (state.vacationCalculation === "shift-based") {
+              // Según turnos: usar el patrón de turnos
+              isFree = item.kind === "L" || isWknd || isHoliday;
+            } else if (state.vacationCalculation === "all-days") {
+              // Todos los días: solo feriados son libres
+              isFree = isHoliday;
+            }
+
+            // badge principal
+            const badge = document.createElement("div");
+            badge.className = "chip";
+            badge.style.position = "absolute";
+            badge.style.left = "6px";
+            badge.style.top = "6px";
+            badge.style.fontSize = "11px";
+            badge.style.background = "rgba(31,41,55,.6)";
+            badge.textContent = state.vacations.has(item.date)
+              ? "Vacaciones"
+              : item.kind === "L"
+              ? "Libre"
+              : item.kind === "D"
+              ? "Turno Día"
+              : "Turno Noche";
+
+            // holiday tags
+            const tagsBox = document.createElement("div");
+            tagsBox.style.position = "absolute";
+            tagsBox.style.left = "6px";
+            tagsBox.style.bottom = "6px";
+            tagsBox.style.display = "flex";
+            tagsBox.style.gap = "4px";
+            tagsBox.style.flexWrap = "wrap";
+
+            const todays = state.holidays[item.date] || [];
+            todays.forEach((h) => {
+              const t = document.createElement("span");
+              t.className = "tag h";
+              t.textContent = "F";
+              if (h.irrenunciable) {
+                t.classList.add("i");
+                t.textContent = "Irr";
+              }
+              if (
+                h.scope.startsWith("regional") ||
+                h.scope.startsWith("local")
+              ) {
+                t.classList.add("l");
+              }
+              tagsBox.appendChild(t);
+            });
+
+            // background by kind
+            let bg = "var(--input-bg)";
+            if (state.vacations.has(item.date)) bg = "rgba(34,197,94,.12)";
+            else if (item.kind === "L") bg = "rgba(163,230,53,.09)";
+            else if (item.kind === "D") bg = "rgba(253,224,71,.09)";
+            else if (item.kind === "N") bg = "rgba(147,197,253,.08)";
+            cell.style.background = bg;
+
+            // click handlers
+            cell.addEventListener("click", (ev) => {
+              if (ev.shiftKey) {
+                // rotate L->D->N->L y guardar override
+                const order = { L: "D", D: "N", N: "L" };
+                item.kind = order[item.kind] || "L";
+                state.overrides[item.date] = item.kind; // guarda override
+                renderMonths(); // re-pinta solo UI
+                renderStats({
+                  L: state.schedule.filter((d) => d.kind === "L").length,
+                  D: state.schedule.filter((d) => d.kind === "D").length,
+                  N: state.schedule.filter((d) => d.kind === "N").length,
+                });
+              } else {
+                // toggle vacation
+                if (state.vacations.has(item.date))
+                  state.vacations.delete(item.date);
+                else state.vacations.add(item.date);
+                renderMonths();
+              }
+              if (state.preferences.autoSave) savePreferences();
+            });
+
+            // Soporte long-press en móvil (simula Shift)
+            let longPressTimer;
+            cell.addEventListener("touchstart", (e) => {
+              longPressTimer = setTimeout(() => {
+                const order = { L: "D", D: "N", N: "L" };
+                item.kind = order[item.kind] || "L";
+                state.overrides[item.date] = item.kind;
+                renderMonths();
+                renderStats({
+                  L: state.schedule.filter((d) => d.kind === "L").length,
+                  D: state.schedule.filter((d) => d.kind === "D").length,
+                  N: state.schedule.filter((d) => d.kind === "N").length,
+                });
+                if (state.preferences.autoSave) savePreferences();
+              }, 500);
+            });
+
+            ["touchend", "touchcancel"].forEach((evt) =>
+              cell.addEventListener(evt, () => clearTimeout(longPressTimer))
+            );
+
+            cell.appendChild(d);
+            cell.appendChild(badge);
+            cell.appendChild(tagsBox);
+            grid.appendChild(cell);
+          });
+
+          cont.appendChild(grid);
+          monthsDiv.appendChild(cont);
+        });
+      }
+
+      async function suggest() {
+        // Mostrar indicador de IA analizando
+        const suggestBtn = document.getElementById("suggest");
+        const originalText = suggestBtn.textContent;
+        suggestBtn.textContent = "🤖 IA Analizando...";
+        suggestBtn.disabled = true;
+
+        try {
+          const suggestData = {
+            start: $("start").value,
+            end: $("end").value,
+            patternStart: $("patternStart").value,
+            pattern: $("pattern").value,
+            vacationCalculation: $("vacationCalculation").value,
+            overrides: state.overrides, // NUEVO
+
+            strategy: "max_free", // Siempre maximizar días libres
+            vacBudget: 15, // Cupo más generoso por defecto
+            minWin: +$("minWin").value,
+            maxWin: +$("maxWin").value,
+          };
+
+          const res = await fetch("/api/suggest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(suggestData),
+          });
+          const data = await res.json();
+          const tbody = document.querySelector("#sugTable tbody");
+          tbody.innerHTML = "";
+          data.suggestions.forEach((r, ix) => {
+            const tr = document.createElement("tr");
+
+            // Determinar el color y emoji para la estrategia de IA
+            let strategyDisplay = "";
+            let strategyClass = "";
+
+            if (r.strategy) {
+              switch (r.strategy) {
+                case "max_consecutive":
+                  strategyDisplay = "🔄 Consecutivos";
+                  strategyClass = "strategy-consecutive";
+                  break;
+                case "holiday_optimization":
+                  strategyDisplay = "🎉 Feriados";
+                  strategyClass = "strategy-holiday";
+                  break;
+                case "minimize_work_loss":
+                  strategyDisplay = "💪 Trabajo";
+                  strategyClass = "strategy-work";
+                  break;
+                case "bridge_optimization":
+                  strategyDisplay = "🌉 Puentes";
+                  strategyClass = "strategy-bridge";
+                  break;
+                case "seasonal_optimization":
+                  strategyDisplay = "🌞 Temporada";
+                  strategyClass = "strategy-seasonal";
+                  break;
+                case "pattern_analysis":
+                  strategyDisplay = "🔍 Patrón";
+                  strategyClass = "strategy-pattern";
+                  break;
+                default:
+                  strategyDisplay = "🤖 IA";
+                  strategyClass = "strategy-ai";
+              }
+            }
+
+            tr.innerHTML = `<td>${ix + 1}</td>
+      <td>${r.start}</td>
+      <td>${r.end}</td>
+      <td>${r.used}</td>
+      <td>${r.used}</td>
+          <td>${r.holCount}${
+              r.irrCount ? " (Irr: " + r.irrCount + ")" : ""
+            }</td>
+      <td>${r.score.toFixed(2)}</td>
+      <td class="${strategyClass}" title="${
+              r.ai_reason || "Sugerencia de IA"
+            }">${strategyDisplay}</td>
+      <td><button data-ix="${ix}" class="take">Tomar</button></td>`;
+            tbody.appendChild(tr);
+            tr.querySelector("button.take").addEventListener("click", () => {
+              // marcar como vacaciones solo los días NO libres dentro de la ventana
+              const all = state.schedule;
+              const startDate = r.start;
+              const endDate = r.end;
+
+              // Analizar los días en el rango para crear explicación
+              let workDays = [];
+              let freeDays = [];
+              let holidayDays = [];
+              let weekendDays = [];
+
+              // Encontrar todos los días en el rango de la sugerencia
+              for (let i = 0; i < all.length; i++) {
+                const day = all[i];
+                const dayDate = day.date;
+
+                // Verificar si el día está en el rango de la sugerencia
+                if (dayDate >= startDate && dayDate <= endDate) {
+                  const isWknd = isWeekend(dayDate);
+                  const isHoliday = (state.holidays[dayDate] || []).length > 0;
+
+                  // Clasificar el día según el tipo de cálculo de vacaciones
+                  if (isHoliday) {
+                    // Los feriados siempre son libres
+                    holidayDays.push({
+                      date: dayDate,
+                      name: state.holidays[dayDate][0]?.name || "Feriado",
+                    });
+                  } else if (isWknd) {
+                    // Los fines de semana siempre son libres
+                    weekendDays.push(dayDate);
+                  } else if (
+                    state.vacationCalculation === "shift-based" &&
+                    day.kind === "L"
+                  ) {
+                    // En modo "según turnos", los días L del patrón son libres
+                    freeDays.push(dayDate);
+                  } else if (
+                    state.vacationCalculation === "traditional" &&
+                    (isWknd || isHoliday)
+                  ) {
+                    // En modo "tradicional", fines de semana y feriados son libres
+                    freeDays.push(dayDate);
+                  } else if (
+                    state.vacationCalculation === "all-days" &&
+                    isHoliday
+                  ) {
+                    // En modo "todos los días", solo feriados son libres
+                    freeDays.push(dayDate);
+                  } else {
+                    // Si no es libre, es un día de trabajo
+                    workDays.push({ date: dayDate, shift: day.kind });
+                    // Marcar como vacaciones solo los días de trabajo
+                    state.vacations.add(dayDate);
+                  }
+                }
+              }
+
+              // Debug: mostrar información de clasificación
+              console.log("=== DEBUG VACACIONES ===");
+              console.log("Rango:", startDate, "a", endDate);
+              console.log("Tipo de cálculo:", state.vacationCalculation);
+              console.log("Días de trabajo:", workDays.length, workDays);
+              console.log("Días libres:", freeDays.length, freeDays);
+              console.log("Feriados:", holidayDays.length, holidayDays);
+              console.log("Fines de semana:", weekendDays.length, weekendDays);
+              console.log("R.used del backend:", r.used);
+              console.log("========================");
+
+              // Crear explicación detallada
+              const explanation = createVacationExplanation({
+                startDate,
+                endDate,
+                totalDays: workDays.length, // Usar siempre workDays.length
+                workDays,
+                freeDays,
+                holidayDays,
+                weekendDays,
+                strategy: r.strategy,
+                aiReason: r.ai_reason,
+                usedVacations: workDays.length, // Usar workDays.length en lugar de r.used
+              });
+
+              // Mostrar explicación
+              showVacationExplanation(explanation);
+
+              // Actualizar el calendario y mostrar confirmación
+              buildCalendar();
+
+              // Mostrar confirmación visual
+              const button = tr.querySelector("button.take");
+              const originalText = button.textContent;
+              button.textContent = "✅ Aplicado";
+              button.style.background = "var(--acc)";
+              button.style.color = "white";
+
+              setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = "";
+                button.style.color = "";
+              }, 2000);
+            });
+          });
+        } catch (error) {
+          console.error("Error al obtener sugerencias de IA:", error);
+          alert("Error al analizar con IA. Intenta nuevamente.");
+        } finally {
+          // Restaurar botón
+          suggestBtn.textContent = originalText;
+          suggestBtn.disabled = false;
+        }
+      }
+
+      async function exportIcs() {
+        if (!state.vacations.size) {
+          alert("No hay días de vacaciones seleccionados.");
+          return;
+        }
+        const res = await fetch("/api/export_ics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vacationDates: [...state.vacations].sort() }),
+        });
+        if (!res.ok) {
+          alert("No se pudo exportar el ICS");
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "vacaciones.ics";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      async function exportCsv() {
+        const res = await fetch("/api/export_csv", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            schedule: state.schedule,
+            holidays: state.holidays,
+            vacations: [...state.vacations],
+          }),
+        });
+        if (!res.ok) {
+          alert("No se pudo exportar el CSV");
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "turnos_vacaciones.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // Event listeners
+      $("build").addEventListener("click", buildCalendar);
+      $("suggest").addEventListener("click", suggest);
+      $("exportIcs").addEventListener("click", exportIcs);
+      $("exportCsv").addEventListener("click", exportCsv);
+      $("clearV").addEventListener("click", () => {
+        state.vacations.clear();
+        buildCalendar();
+      });
+      $("themeToggle").addEventListener("click", toggleTheme);
+      $("sidebarToggle").addEventListener("click", toggleSidebar);
+      $("savePrefs").addEventListener("click", savePreferences);
+      $("loadPrefs").addEventListener("click", loadPreferences);
+      $("clearPrefs").addEventListener("click", () => {
+        localStorage.removeItem("turnos_preferences");
+        alert(
+          "Preferencias limpiadas. Ahora se usarán los valores por defecto."
+        );
+        location.reload(); // Recargar la página para usar valores por defecto
+      });
+
+      // Auto-save preferences when inputs change
+      [
+        "start",
+        "end",
+        "patternStart",
+        "pattern",
+        "patternPreset",
+        "shiftType",
+        "vacationCalculation",
+
+        "autoSave",
+      ].forEach((id) => {
+        document.getElementById(id).addEventListener("change", () => {
+          if (state.preferences.autoSave) savePreferences();
+        });
+      });
+
+      // Debounce function to avoid too many API calls
+      let buildTimeout;
+      let isUpdating = false;
+      let userIsTyping = false;
+
+      function debouncedBuildCalendar() {
+        clearTimeout(buildTimeout);
+
+        // Show updating indicator
+        const indicator = document.getElementById("autoUpdateIndicator");
+        if (indicator && !isUpdating) {
+          indicator.style.opacity = "1";
+          indicator.innerHTML = "🔄 Actualizando...";
+        }
+
+        buildTimeout = setTimeout(() => {
+          buildCalendar(true); // true = auto update
+
+          // Hide updating indicator after a delay
+          setTimeout(() => {
+            if (indicator) {
+              indicator.style.opacity = "0.7";
+              indicator.innerHTML = "⚡ Actualización automática";
+            }
+          }, 1000);
+        }, 500); // 500ms delay for better UX
+      }
+
+      // Auto-rebuild calendar when inputs that affect calculation change
+      [
+        "start",
+        "end",
+        "patternStart",
+        "pattern",
+        "patternPreset",
+        "shiftType",
+        "vacationCalculation",
+        "minWin",
+        "maxWin",
+      ].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+          // Listen for both change and input events
+          element.addEventListener("change", () => {
+            // Add visual feedback
+            element.style.borderColor = "var(--acc)";
+            setTimeout(() => {
+              element.style.borderColor = "";
+            }, 300);
+            debouncedBuildCalendar();
+          });
+          element.addEventListener("input", () => {
+            debouncedBuildCalendar();
+          });
+        }
+      });
+
+      // Special handling for pattern preset changes
+      document
+        .getElementById("patternPreset")
+        .addEventListener("change", () => {
+          const patternPreset = document.getElementById("patternPreset").value;
+          const patternField = document.getElementById("pattern");
+          const patternStatus = document.getElementById("patternStatus");
+
+          if (patternPreset === "custom") {
+            // Custom pattern - user can edit
+            patternField.placeholder = "Ej: N,N,L,L,D,D (comienza con noche)";
+            if (patternStatus) {
+              patternStatus.textContent = "Personalizado";
+              patternStatus.style.color = "var(--acc)";
+            }
+          } else {
+            // Generate pattern and update field, but keep it editable
+            const shiftType = document.getElementById("shiftType").value;
+            const generatedPattern = generatePattern(patternPreset, shiftType);
+            // Only update if user is not actively typing
+            if (!userIsTyping) {
+              patternField.value = generatedPattern;
+            }
+            patternField.placeholder = "Puedes modificar este patrón";
+            if (patternStatus) {
+              patternStatus.textContent = "Sugerido";
+              patternStatus.style.color = "var(--warn)";
+            }
+          }
+        });
+
+      // Special handling for shift type changes - only update if not custom
+      document.getElementById("shiftType").addEventListener("change", () => {
+        const patternPreset = document.getElementById("patternPreset").value;
+        const patternField = document.getElementById("pattern");
+
+        // Only update if not custom preset and user is not actively typing
+        if (patternPreset !== "custom" && !userIsTyping) {
+          const shiftType = document.getElementById("shiftType").value;
+          const generatedPattern = generatePattern(patternPreset, shiftType);
+          patternField.value = generatedPattern;
+        }
+      });
+
+      // Special handling for pattern field to detect user typing
+      const patternField = document.getElementById("pattern");
+      if (patternField) {
+        patternField.addEventListener("focus", () => {
+          userIsTyping = true;
+        });
+
+        patternField.addEventListener("blur", () => {
+          userIsTyping = false;
+        });
+
+        patternField.addEventListener("input", () => {
+          userIsTyping = true;
+
+          // Show typing indicator
+          const patternStatus = document.getElementById("patternStatus");
+          if (patternStatus) {
+            patternStatus.textContent = "Escribiendo...";
+            patternStatus.style.color = "var(--acc)";
+          }
+
+          // Reset typing flag after a delay
+          setTimeout(() => {
+            userIsTyping = false;
+            // Restore status indicator
+            if (patternStatus) {
+              const patternPreset =
+                document.getElementById("patternPreset").value;
+              if (patternPreset === "custom") {
+                patternStatus.textContent = "Personalizado";
+                patternStatus.style.color = "var(--acc)";
+              } else {
+                patternStatus.textContent = "Sugerido";
+                patternStatus.style.color = "var(--warn)";
+              }
+            }
+          }, 2000);
+        });
+      }
+
+      // Sync pattern start with range start
+      document.getElementById("start").addEventListener("change", () => {
+        const startValue = document.getElementById("start").value;
+        document.getElementById("patternStart").value = startValue;
+        state.patternStart = startValue;
+        buildCalendar(true);
+      });
+
+      // Sidebar toggle functionality
+      function toggleSidebar() {
+        const wrap = document.querySelector(".wrap");
+        const toggle = document.getElementById("sidebarToggle");
+        const isCollapsed = wrap.classList.contains("sidebar-collapsed");
+
+        if (isCollapsed) {
+          wrap.classList.remove("sidebar-collapsed");
+          toggle.innerHTML = "📋";
+          toggle.title = "Ocultar Panel";
+          toggle.classList.remove("pulse");
+        } else {
+          wrap.classList.add("sidebar-collapsed");
+          toggle.innerHTML = "⚙️";
+          toggle.title = "Mostrar Panel";
+          toggle.classList.add("pulse");
+        }
+
+        // Save preference
+        localStorage.setItem("sidebar_collapsed", !isCollapsed);
+      }
+
+      function initSidebar() {
+        const savedState = localStorage.getItem("sidebar_collapsed");
+        if (savedState === "true") {
+          document.querySelector(".wrap").classList.add("sidebar-collapsed");
+          document.getElementById("sidebarToggle").innerHTML = "⚙️";
+          document.getElementById("sidebarToggle").title = "Mostrar Panel";
+          document.getElementById("sidebarToggle").classList.add("pulse");
+        }
+      }
+
+      // Mobile-specific enhancements
+      function initMobileEnhancements() {
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener(
+          "touchend",
+          function (event) {
+            const now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+              event.preventDefault();
+            }
+            lastTouchEnd = now;
+          },
+          false
+        );
+
+        // Add swipe gesture for sidebar toggle on mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener("touchstart", (e) => {
+          touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener("touchend", (e) => {
+          touchEndX = e.changedTouches[0].screenX;
+          handleSwipe();
+        });
+
+        function handleSwipe() {
+          const swipeThreshold = 50;
+          const swipeDistance = touchEndX - touchStartX;
+
+          // Swipe right to show sidebar, left to hide
+          if (Math.abs(swipeDistance) > swipeThreshold) {
+            const wrap = document.querySelector(".wrap");
+            const isCollapsed = wrap.classList.contains("sidebar-collapsed");
+
+            if (swipeDistance > 0 && isCollapsed) {
+              // Swipe right and sidebar is collapsed - show it
+              toggleSidebar();
+            } else if (swipeDistance < 0 && !isCollapsed) {
+              // Swipe left and sidebar is visible - hide it
+              toggleSidebar();
+            }
+          }
+        }
+
+        // Optimize table scrolling on mobile
+        const tables = document.querySelectorAll(".table");
+        tables.forEach((table) => {
+          table.addEventListener("touchstart", function () {
+            this.style.overflowX = "auto";
+          });
+        });
+      }
+
+      // Función para limpiar fechas guardadas (opcional - descomenta si quieres resetear todo)
+      function clearSavedDates() {
+        const saved = localStorage.getItem("turnos_preferences");
+        if (saved) {
+          const prefs = JSON.parse(saved);
+          // Eliminar fechas y vacaciones guardadas
+          delete prefs.start;
+          delete prefs.end;
+          delete prefs.patternStart;
+          delete prefs.vacations;
+          localStorage.setItem("turnos_preferences", JSON.stringify(prefs));
+        }
+      }
+
+      // Initialize
+      initTheme();
+      loadPreferences();
+      initSidebar();
+      initMobileEnhancements();
+
+      // Initialize pattern field state
+      function initPatternField() {
+        const patternPreset = document.getElementById("patternPreset").value;
+        const patternField = document.getElementById("pattern");
+        const patternStatus = document.getElementById("patternStatus");
+
+        if (patternPreset === "custom") {
+          patternField.placeholder = "Ej: N,N,L,L,D,D (comienza con noche)";
+          if (patternStatus) {
+            patternStatus.textContent = "Personalizado";
+            patternStatus.style.color = "var(--acc)";
+          }
+        } else {
+          patternField.placeholder = "Puedes modificar este patrón";
+          if (patternStatus) {
+            patternStatus.textContent = "Sugerido";
+            patternStatus.style.color = "var(--warn)";
+          }
+        }
+      }
+
+      // Initialize pattern field
+      initPatternField();
+
+      // Show ready indicator
+      setTimeout(() => {
+        const indicator = document.getElementById("autoUpdateIndicator");
+        if (indicator) {
+          indicator.style.opacity = "1";
+          indicator.innerHTML = "🚀 Listo para usar";
+          setTimeout(() => {
+            indicator.style.opacity = "0.7";
+            indicator.innerHTML = "⚡ Actualización automática";
+          }, 3000);
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
